@@ -12,6 +12,11 @@
 namespace Wilson;
 
 use Exception;
+use Wilson\Routing\Router;
+use Wilson\Routing\UrlTools;
+use Wilson\Caching\NullCache;
+use Wilson\Caching\FileCache;
+use Wilson\Caching\CacheInterface;
 use Wilson\Injection\Injector;
 use Wilson\Injection\ProviderInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,14 +28,9 @@ use Symfony\Component\HttpFoundation\Response;
 class Api
 {
 	/**
-	 * @var Environment
+	 * @var Dispatcher
 	 */
-	protected $environment;
-
-	/**
-	 * @var callable
-	 */
-	protected $error;
+	protected $dispatcher;
 
 	/**
 	 * @var Injector
@@ -38,39 +38,18 @@ class Api
 	protected $injector;
 
 	/**
-	 * @var callable
-	 */
-	protected $notFound;
-
-	/**
-	 * @var array
+	 * @var <string, object>[]
 	 */
 	protected $resources = array();
 
 	/**
-	 * @param Environment $environment
+	 * @param Dispatcher $dispatcher
 	 * @param Injector $injector
 	 */
-	public function __construct(Environment $environment, Injector $injector)
+	public function __construct(Dispatcher $dispatcher,	Injector $injector)
 	{
-		$this->environment = $environment;
-		$this->injector = $injector;
-
-		$this->injector->instance("environment", $environment);
-
-		$this->notFound = function (Response $resp)
-		{
-			$resp->setStatusCode(404);
-		};
-
-		$this->error = function (Exception $exception, Response $resp) use ($environment)
-		{
-			$resp->setStatusCode(503);
-
-			if (!$environment->production()) {
-				$resp->setContent("<pre>" . $exception . "</pre>");
-			}
-		};
+		$this->dispatcher = $dispatcher;
+		$this->injector   = $injector;
 	}
 
 	/**
@@ -87,7 +66,7 @@ class Api
 			));
 		}
 
-		$this->resources[] = $resource;
+		$this->resources[get_class($resource)] = $resource;
 		return $this;
 	}
 
@@ -113,7 +92,7 @@ class Api
 			throw new \InvalidArgumentException("Argument should be callable");
 		}
 
-		$this->error = $callable;
+		$this->dispatcher->error($callable);
 		return $this;
 	}
 
@@ -129,7 +108,7 @@ class Api
 			throw new \InvalidArgumentException("Argument should be callable");
 		}
 
-		$this->notFound = $callable;
+		$this->dispatcher->notFound($callable);
 		return $this;
 	}
 
@@ -145,29 +124,48 @@ class Api
 		$this->injector->instance("req", $req);
 		$this->injector->instance("resp", $resp);
 
-		try {
-			$router = new Router($this->resources, $this->environment->cachePath);
-			$dispatcher = new Dispatcher($this->injector, $router);
-			$dispatcher->notFound($this->notFound);
-
-			$dispatcher->dispatch($req, $resp);
-
-		} catch (Exception $exception) {
-			$this->injector->instance("exception", $exception);
-			$this->injector->inject($this->error);
-		}
+		$this->dispatcher->tryDispatch($this->resources, $req, $resp);
 
 		$resp->send();
 	}
 
 	/**
-	 * Creates a new instance of the
+	 * Creates a new instance of the API.
 	 *
 	 * @param array $configuration
 	 * @return static
 	 */
 	public static function createServer(array $configuration = array())
 	{
-		return new static(new Environment($configuration), new Injector());
+		$environment = new Environment($configuration);
+
+		if ($environment->production()) {
+			$cache = new FileCache($environment->cachePath);
+
+		} else {
+			$cache = new NullCache();
+		}
+
+		$injector   = new Injector($cache);
+		$router     = new Router($cache, new UrlTools());
+		$dispatcher = new Dispatcher($injector, $router);
+
+		$dispatcher->notFound(function (Response $resp)
+		{
+			$resp->setStatusCode(404);
+		});
+
+		$dispatcher->error(function (Environment $environment, Exception $exception, Response $resp)
+		{
+			$resp->setStatusCode(503);
+
+			if (!$environment->production()) {
+				$resp->setContent("<pre>$exception</pre>");
+			}
+		});
+
+		$injector->instance("environment", $environment);
+
+		return new static($dispatcher, $injector);
 	}
 }

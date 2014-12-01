@@ -11,7 +11,8 @@
  
 namespace Wilson;
 
-use FastRoute\Dispatcher as FastDispatcher;
+use Wilson\Routing\Route;
+use Wilson\Routing\Router;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Wilson\Injection\Injector;
@@ -27,6 +28,11 @@ class Dispatcher
 	 * @var Environment
 	 */
 	protected $environment;
+
+	/**
+	 * @var callable
+	 */
+	protected $error;
 
 	/**
 	 * @var Injector
@@ -51,6 +57,18 @@ class Dispatcher
 	/**
 	 * @param callable $callable
 	 */
+	public function error($callable)
+	{
+		if (!is_callable($callable)) {
+			throw new \InvalidArgumentException("Argument should be callable");
+		}
+
+		$this->error = $callable;
+	}
+
+	/**
+	 * @param callable $callable
+	 */
 	public function notFound($callable)
 	{
 		if (!is_callable($callable)) {
@@ -61,27 +79,48 @@ class Dispatcher
 	}
 
 	/**
+	 * @param array $resources
 	 * @param Request $request
 	 * @param Response $response
 	 */
-	public function dispatch(Request $request, Response $response)
+	public function dispatch(array $resources, Request $request, Response $response)
 	{
-		$route = $this->router->dispatch($request->getMethod(), $request->getPathInfo());
+		$route = $this->router->match(
+			$resources,
+			$request->getMethod(),
+			$request->getPathInfo()
+		);
 
-		switch ($route[0]) {
-			case FastDispatcher::NOT_FOUND:
+		switch ($route->status) {
+			case Route::NOT_FOUND:
 				$this->injector->inject($this->notFound);
 				break;
 
-			case FastDispatcher::METHOD_NOT_ALLOWED:
+			case Route::METHOD_NOT_ALLOWED:
 				$response->setStatusCode(405);
-				$response->headers->set("Allow", $route[1]);
+				$response->headers->set("Allow", $route->allowed);
 				break;
 
-			case FastDispatcher::FOUND:
-				$request->request->add($route[2]); // URL Params
-				$this->injector->inject($route[1]); // The callback
+			case Route::FOUND:
+				$request->request->add($route->params); // URL Params
+				$this->injector->inject($route->handler); // The callback
 				break;
+		}
+	}
+
+	/**
+	 * @param array $resources
+	 * @param Request $request
+	 * @param Response $response
+	 */
+	public function tryDispatch(array $resources, Request $request, Response $response)
+	{
+		try {
+			$this->dispatch($resources, $request, $response);
+
+		} catch (\Exception $exception) {
+			$this->injector->instance("exceptions", $exception);
+			$this->injector->inject($this->error);
 		}
 	}
 }
