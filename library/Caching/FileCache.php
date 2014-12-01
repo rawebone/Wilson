@@ -80,6 +80,8 @@ class FileCache implements CacheInterface
 
     protected function store()
     {
-        file_put_contents($this->file, var_export($this->state, true));
+		if (!is_file($this->file)) {
+        	file_put_contents($this->file, "<?php return " . var_export($this->state, true) . ";");
+		}
     }
 }
