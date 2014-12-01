@@ -56,7 +56,7 @@ class Router
 
                     if (isset($handlers[$method])) {
 						$route->status   = Route::FOUND;
-						$route->handlers = $handlers[$method];
+						$route->handlers = array($resource, $handlers[$method][1]);
 						$route->params   = $this->urlTools->parameters($expr, $uri);
 
                     } else {
