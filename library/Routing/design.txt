@@ -1,0 +1,58 @@
+
+Routing with FastRoute is not intuitive:
+
+* Params containing conditions are not good because they become less readable
+* Needs every route to be defined to work
+* Slower to process methods not allowed
+* Doesn't work on PHP5.3
+
+We need to resolve this while keeping regex performance high.
+
+Routing annotations need to look like this:
+
+/**
+ * @route [METHOD] [URI]
+ * @where [PARAM_NAME] [REGEX]
+ */
+
+While this takes more parse time, it is more readable and we can easily cache
+the table.
+
+The table needs to be an ordered structure:
+
+[COMPILED_EXPR][METHOD][HANDLER]
+
+e.g.
+
+["/users/(?<id> [^/])}"]["GET"] ["UserResource", "item"]
+                        ["POST"]["UserResource", "update"]
+
+This table, then, represents a resource view. We can process this with the rough
+pseudo-code of:
+
+for ($resource in $resources) {
+    $table = buildRoutingTable($resource);
+
+    for ($uri, $handlers in $table) {
+        if ($uri.match($inputUri)) {
+            if (!$handlers[$method]) {
+                return [METHOD_NOT_ALLOWED, $handlers.keys()];
+            } else {
+                return [FOUND, $handlers[$method]
+            }
+        }
+    }
+}
+
+return [NOT_FOUND]
+
+The process of optimising the calls then becomes one of registration of entities
+hit most often. This is not necessarily the most optimum path, however it is simpler
+than a Chunked Group Based Count approach, at least for smaller API's in the short
+term.
+
+We can also cache this kind of a table easily: by storing the class name of the
+resource on registration, we can pass this back rather than having to maintain
+state. When we put this to disk, no state needs to be preserved meaning a whole
+class of errors can be avoided.
+
