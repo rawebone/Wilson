@@ -55,9 +55,9 @@ class Router
                 if ($this->urlTools->match($expr, $uri)) {
 
                     if (isset($handlers[$method])) {
-						$route->status   = Route::FOUND;
-						$route->handlers = array($resource, $handlers[$method][1]);
-						$route->params   = $this->urlTools->parameters($expr, $uri);
+						$route->status  = Route::FOUND;
+						$route->handler = array($resource, $handlers[$method][1]);
+						$route->params  = $this->urlTools->parameters($expr, $uri);
 
                     } else {
 						$route->status  = Route::METHOD_NOT_ALLOWED;
