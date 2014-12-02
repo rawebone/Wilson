@@ -133,7 +133,7 @@ class Router
      */
     protected function routeConditions($comment)
     {
-        if (preg_match_all("/@where ([\\w+]) ([^\r\n]+)/", $comment, $matches)) {
+        if (preg_match_all("/@where ([\\w])+ ([^\r\n]+)/", $comment, $matches)) {
             $conditions = array();
             for ($i = 0, $len = count($matches[1]); $i < $len; $i++) {
                 $conditions[$matches[1][$i]] = $matches[2][$i];
