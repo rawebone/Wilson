@@ -119,7 +119,7 @@ class Dispatcher
 			$this->dispatch($resources, $request, $response);
 
 		} catch (\Exception $exception) {
-			$this->injector->instance("exceptions", $exception);
+			$this->injector->instance("exception", $exception);
 			$this->injector->inject($this->error);
 		}
 	}
