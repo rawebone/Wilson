@@ -55,9 +55,9 @@ class Router
                 if ($this->urlTools->match($expr, $uri)) {
 
                     if (isset($handlers[$method])) {
-						$route->status  = Route::FOUND;
-						$route->handler = array($resource, $handlers[$method][1]);
-						$route->params  = $this->urlTools->parameters($expr, $uri);
+						$route->status   = Route::FOUND;
+						$route->handlers = $this->buildHandlers($resource, $handlers[$method]);
+						$route->params   = $this->urlTools->parameters($expr, $uri);
 
                     } else {
 						$route->status  = Route::METHOD_NOT_ALLOWED;
@@ -96,6 +96,7 @@ class Router
 
             list($httpMethod, $uri) = $this->routeAnnotation($comment);
             $conditions = $this->routeConditions($comment);
+            $middleware = $this->routeMiddleware($comment);
 
             $compiled = $this->urlTools->compile($uri, $conditions);
 
@@ -103,11 +104,26 @@ class Router
                 $table[$compiled] = array();
             }
 
-            $table[$compiled][$httpMethod] = array($resourceName, $method->name);
+            $handlers = array();
+            foreach ($middleware as $ware) {
+                $handlers[] = $ware;
+            }
+            $handlers[] = $method->name;
+
+            $table[$compiled][$httpMethod] = $handlers;
         }
 
         $this->cache->set($key, $table);
         return $table;
+    }
+
+    protected function buildHandlers($resource, array $handlers)
+    {
+        $return = array();
+        foreach ($handlers as $handler) {
+            $return[] = array($resource, $handler);
+        }
+        return $return;
     }
 
     /**
@@ -142,6 +158,15 @@ class Router
             return $conditions;
         }
 
-        return null;
+        return array();
+    }
+
+    protected function routeMiddleware($comment)
+    {
+        if (preg_match_all("/@through ([\\w\\_])+/", $comment, $matches)) {
+            return $matches[1];
+        }
+
+        return array();
     }
 }

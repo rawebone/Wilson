@@ -102,8 +102,13 @@ class Dispatcher
 				break;
 
 			case Route::FOUND:
-				$request->request->add($route->params); // URL Params
-				$this->injector->inject($route->handler); // The callback
+				$request->request->add($route->params);
+
+                foreach ($route->handlers as $handler) {
+                    if (!$this->injector->inject($handler)) {
+                        return;
+                    }
+                }
 				break;
 		}
 	}

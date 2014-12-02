@@ -26,9 +26,9 @@ class Route
 	public $allowed;
 
 	/**
-	 * @var callable
+	 * @var callable[]
 	 */
-	public $handler;
+	public $handlers;
 
 	/**
 	 * @var array
