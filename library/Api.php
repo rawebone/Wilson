@@ -12,13 +12,6 @@
 namespace Wilson;
 
 use Exception;
-use Wilson\Routing\Router;
-use Wilson\Routing\UrlTools;
-use Wilson\Caching\NullCache;
-use Wilson\Caching\FileCache;
-use Wilson\Caching\CacheInterface;
-use Wilson\Injection\Injector;
-use Wilson\Injection\ProviderInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
