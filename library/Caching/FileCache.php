@@ -18,6 +18,11 @@ namespace Wilson\Caching;
 class FileCache implements CacheInterface
 {
     /**
+     * @var bool
+     */
+    protected $amended = false;
+
+    /**
      * @var string
      */
     protected $file;
@@ -68,6 +73,7 @@ class FileCache implements CacheInterface
      */
     public function set($key, $value)
     {
+        $this->amended = true;
         $this->state[$key] = $value;
     }
 
@@ -80,7 +86,7 @@ class FileCache implements CacheInterface
 
     protected function store()
     {
-		if (!is_file($this->file)) {
+		if (!$this->amended) {
         	file_put_contents($this->file, "<?php return " . var_export($this->state, true) . ";");
 		}
     }

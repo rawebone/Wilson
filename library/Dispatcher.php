@@ -25,11 +25,6 @@ class Dispatcher
 	protected $router;
 
 	/**
-	 * @var Environment
-	 */
-	protected $environment;
-
-	/**
 	 * @var callable
 	 */
 	protected $error;
@@ -97,8 +92,14 @@ class Dispatcher
 				break;
 
 			case Route::METHOD_NOT_ALLOWED:
-				$response->setStatusCode(405);
-				$response->headers->set("Allow", $route->allowed);
+                $response->headers->set("Allow", $route->allowed);
+
+                if ($request->getMethod() === "OPTIONS") {
+                    $response->setStatusCode(200);
+                } else {
+                    $response->setStatusCode(405);
+
+                }
 				break;
 
 			case Route::FOUND:

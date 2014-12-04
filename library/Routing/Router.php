@@ -86,6 +86,8 @@ class Router
         $table = array();
         $reflection = new ReflectionClass($resource);
 
+        $globalMiddleware = $this->routeMiddleware($reflection->getDocComment());
+
         foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             /** @var ReflectionMethod $method */
             $comment = $method->getDocComment();
@@ -105,6 +107,9 @@ class Router
             }
 
             $handlers = array();
+            foreach ($globalMiddleware as $ware) {
+                $handlers[] = $ware;
+            }
             foreach ($middleware as $ware) {
                 $handlers[] = $ware;
             }
@@ -149,7 +154,7 @@ class Router
      */
     protected function routeConditions($comment)
     {
-        if (preg_match_all("/@where ([\\w])+ ([^\r\n]+)/", $comment, $matches)) {
+        if (preg_match_all("/@where ([\\w]+) ([^\r\n]+)/", $comment, $matches)) {
             $conditions = array();
             for ($i = 0, $len = count($matches[1]); $i < $len; $i++) {
                 $conditions[$matches[1][$i]] = $matches[2][$i];
@@ -163,7 +168,7 @@ class Router
 
     protected function routeMiddleware($comment)
     {
-        if (preg_match_all("/@through ([\\w\\_])+/", $comment, $matches)) {
+        if (preg_match_all("/@through ([\\w\\_]+)/", $comment, $matches)) {
             return $matches[1];
         }
 
