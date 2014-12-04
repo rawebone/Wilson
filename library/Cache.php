@@ -9,13 +9,13 @@
  * file that was distributed with this source code.
  */
 
-namespace Wilson\Caching;
+namespace Wilson;
 
 /**
- * FileCache is a sub-optimal way of caching data to disk, however it makes
+ * Cache is a sub-optimal way of caching data to disk, however it makes
  * the best sense for the framework as it requires no dependencies.
  */
-class FileCache implements CacheInterface
+class Cache
 {
     /**
      * @var bool
@@ -79,14 +79,14 @@ class FileCache implements CacheInterface
 
     protected function load()
     {
-        if (is_file($this->file)) {
+        if ($this->file && is_file($this->file)) {
             $this->state = include $this->file;
         }
     }
 
     protected function store()
     {
-		if (!$this->amended) {
+		if ($this->file && $this->amended) {
         	file_put_contents($this->file, "<?php return " . var_export($this->state, true) . ";");
 		}
     }
