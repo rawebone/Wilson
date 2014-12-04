@@ -86,8 +86,6 @@ class Router
         $table = array();
         $reflection = new ReflectionClass($resource);
 
-        $globalMiddleware = $this->routeMiddleware($reflection->getDocComment());
-
         foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             /** @var ReflectionMethod $method */
             $comment = $method->getDocComment();
@@ -107,9 +105,6 @@ class Router
             }
 
             $handlers = array();
-            foreach ($globalMiddleware as $ware) {
-                $handlers[] = $ware;
-            }
             foreach ($middleware as $ware) {
                 $handlers[] = $ware;
             }
