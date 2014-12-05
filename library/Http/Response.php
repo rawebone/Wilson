@@ -51,7 +51,7 @@ class Response extends MessageAbstract
     /**
      * @var int HTTP status code
      */
-    protected $status;
+    protected $status = 200;
 
     /**
      * @var Request
@@ -122,13 +122,9 @@ class Response extends MessageAbstract
      * @param int $status
      * @param array $headers
      */
-    public function __construct(Request $request, $body = "", $status = 200, $headers = array())
+    public function __construct(Request $request)
     {
         $this->request = $request;
-
-        $this->setBody($body);
-        $this->setStatus($status);
-        $this->setHeaders($headers);
     }
 
     /**

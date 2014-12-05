@@ -12,76 +12,88 @@
 namespace Wilson;
 
 use Exception;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Wilson\Http\Request;
+use Wilson\Http\Response;
+use Wilson\Routing\Route;
+use Wilson\Routing\Router;
+use Wilson\Routing\UrlTools;
 
 class Api
 {
 	/**
+	 * Defines the path where we can cache framework data.
+	 *
 	 * @var string
 	 */
 	public $cachePath;
 
 	/**
+	 * Defines a callable which will be used to handle any errors during dispatch.
+	 *
+	 * A service called "exception" is available to this handler.
+	 *
 	 * @var callable
 	 */
 	public $error;
 
 	/**
+	 * The Injector is at the core of the Wilson framework and can be used to
+	 * define singletons in your application, allowing you to keep your code
+	 * testable but also fast.
+	 *
 	 * @var Injector
 	 */
 	public $injector;
 
 	/**
+	 * Defines a callable which will be used when a request cannot be matched
+	 * to a route.
+	 *
 	 * @var callable
 	 */
 	public $notFound;
 
 	/**
+	 * Holds all of the objects that define your API.
+	 *
 	 * @var object[]
 	 */
 	public $resources = array();
 
-	public function __construct()
+	/**
+	 * @param Injector $injector
+	 */
+	public function __construct(Injector $injector = null)
 	{
-		$this->injector = new Injector();
+		$this->injector = $injector ?: new Injector();
+		$this->buildInjector();
 
-		$this->error = function ()
+		$this->error = function (Response $resp, Exception $exception)
 		{
-
+			$resp->setStatus(500);
+			$resp->setBody($exception);
 		};
 
-		$this->notFound = function ()
+		$this->notFound = function (Response $resp)
 		{
-
+			$resp->setStatus(404);
 		};
-	}
-
-	public function run()
-	{
-		$req  = Request::createFromGlobals();
-		$resp = new Response();
-
-		$resp->prepare($req);
-
-		$this->injector->instance("req", $req);
-		$this->injector->instance("resp", $resp);
-
-		$this->tryDispatch($req, $resp);
-
-		$resp->send();
 	}
 
 	/**
-	 * @param Request $request
-	 * @param Response $response
+	 * Dispatches the request and sends the response.
+	 *
+	 * @param Router $_router
+	 * @param Request $req
+	 * @param Response $resp
+	 * @return void
 	 */
-	protected function dispatch(Request $request, Response $response)
+	public function dispatch(Router $_router, Request $req, Response $resp)
 	{
-		$route = $this->router->match(
-			$resources,
-			$request->getMethod(),
-			$request->getPathInfo()
+		$route = $_router->match(
+			$this->resources,
+			$req->getMethod(),
+			$req->getPathInfo()
 		);
 
 		switch ($route->status) {
@@ -90,40 +102,81 @@ class Api
 				break;
 
 			case Route::METHOD_NOT_ALLOWED:
-				$response->headers->set("Allow", $route->allowed);
+				$resp->setHeader("Allow", $route->allowed);
 
-				if ($request->getMethod() === "OPTIONS") {
-					$response->setStatusCode(200);
+				if ($req->getMethod() === "OPTIONS") {
+					$resp->setStatus(200);
 				} else {
-					$response->setStatusCode(405);
+					$resp->setStatus(405);
 
 				}
 				break;
 
 			case Route::FOUND:
-				$request->request->add($route->params);
+				$req->setParams($route->params);
 
+				// Traverse the middleware and handler, aborting if any
+				// of handlers fail.
 				foreach ($route->handlers as $handler) {
-					if (!$this->injector->inject($handler)) {
+					if ($this->injector->inject($handler) === false) {
 						return;
 					}
 				}
 				break;
 		}
+
+		$resp->send();
 	}
 
 	/**
-	 * @param Request $request
-	 * @param Response $response
+	 * Calls the dispatcher, directing any errors to the error handler.
+	 *
+	 * @return void
 	 */
-	protected function tryDispatch(Request $request, Response $response)
+	public function tryDispatch()
 	{
 		try {
-			$this->dispatch($request, $response);
+			$this->injector->inject(array($this, "dispatch"));
 
 		} catch (\Exception $exception) {
 			$this->injector->instance("exception", $exception);
 			$this->injector->inject($this->error);
 		}
+	}
+
+	/**
+	 * Defines the basic handling for the framework.
+	 *
+	 * @return void
+	 */
+	protected function buildInjector()
+	{
+		$this->injector->instance("_api", $this);
+		$this->injector->instance("_injector", $this->injector);
+
+		$this->injector->service("_ut", function ()
+		{
+			return new UrlTools();
+		});
+
+		$this->injector->service("_cache", function (Api $_api)
+		{
+			return new Cache($_api->cachePath);
+		});
+
+		$this->injector->service("_router", function ($_cache, $_ut)
+		{
+			return new Router($_cache, $_ut);
+		});
+
+		$this->injector->service("req", function ()
+		{
+			return new Request($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES);
+		});
+
+		$this->injector->service("resp", function ($req)
+		{
+			return new Response($req);
+		});
 	}
 }

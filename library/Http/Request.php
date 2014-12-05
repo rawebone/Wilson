@@ -110,18 +110,11 @@ class Request extends MessageAbstract
     protected $content;
 
     /**
-     * $_GET superglobal
+     * This is a merged version of the $_GET and $_POST arrays.
      *
      * @var array
      */
-    protected $get = array();
-
-    /**
-     * $_POST superglobal
-     *
-     * @var array
-     */
-    protected $post = array();
+    protected $request = array();
 
     /**
      * $_FILES superglobal
@@ -133,9 +126,8 @@ class Request extends MessageAbstract
     public function __construct(array $server, array $get, array $post,
                                 array $cookies, array $files, $input = "php://input")
     {
-        $this->get = $get;
-        $this->post = $post;
-        $this->files = $files;
+		$this->request = array_merge($get, $post);
+        $this->files   = $files;
 
         $this->method = $server["REQUEST_METHOD"];
         $this->ip = $server["REMOTE_ADDR"];
@@ -143,8 +135,8 @@ class Request extends MessageAbstract
         $this->serverPort = $server["SERVER_PORT"];
 
         // Server params
-        $scriptName = $server["SCRIPT_NAME"]; // <-- "/foo/index.php"
-        $requestUri = $server["REQUEST_URI"]; // <-- "/foo/bar?test=abc" or "/foo/index.php/bar?test=abc"
+        $scriptName  = $server["SCRIPT_NAME"]; // <-- "/foo/index.php"
+        $requestUri  = $server["REQUEST_URI"]; // <-- "/foo/bar?test=abc" or "/foo/index.php/bar?test=abc"
         $queryString = isset($server["QUERY_STRING"]) ? $server["QUERY_STRING"] : ""; // <-- "test=abc" or ""
 
         // Physical path
@@ -201,11 +193,6 @@ class Request extends MessageAbstract
             $this->originalMethod = $this->method;
             $this->method = strtoupper($this->getHeader("X-Http-Method-Override"));
         }
-
-        // Cookies
-        foreach ($cookies as $cookie) {
-
-        }
     }
 
     /**
@@ -242,50 +229,54 @@ class Request extends MessageAbstract
         return $this->getHeader("X-Requested-With", "") === "XMLHttpRequest";
     }
 
-    /**
-     * Returns a parameter from the GET and POST data associated with the request.
-     * This is less performant that get() or post(), and GET data is prioritised.
-     *
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
-     */
-    public function param($key, $default = null)
-    {
-        if (($get = $this->get($key))) {
-            return $get;
-        }
+	/**
+	 * Returns a request parameter, or the default.
+	 *
+	 * @param string $key
+	 * @param mixed $default
+	 * @return mixed
+	 */
+	public function getParam($key, $default = null)
+	{
+		return isset($this->request[$key]) ? $this->request[$key] : $default;
+	}
 
-        if (($post = $this->post($key))) {
-            return $post;
-        }
+	/**
+	 * Sets a request parameter, if the value is null then the parameter will
+	 * be unset.
+	 *
+	 * @param string $key
+	 * @param mixed $value
+	 * @return void
+	 */
+	public function setParam($key, $value)
+	{
+		if (is_null($value)) {
+			unset($this->request[$key]);
+		} else {
+			$this->request[$key] = $value;
+		}
+	}
 
-        return $default;
-    }
+	/**
+	 * @return array
+	 */
+	public function getParams()
+	{
+		return $this->request;
+	}
 
-    /**
-     * Returns an entry from the GET data or a default value.
-     *
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
-     */
-    public function get($key, $default = null)
-    {
-        return isset($this->get[$key]) ? $this->get[$key] : $default;
-    }
-
-    /**
-     * Returns an entry from the POST data or a default value.
-     *
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
-     */
-    public function post($key, $default = null)
-    {
-        return isset($this->post[$key]) ? $this->post[$key] : $default;
-    }
+	/**
+	 * @param array $params
+	 * @return void
+	 * @see setParam
+	 */
+	public function setParams(array $params)
+	{
+		foreach ($params as $key => $value) {
+			$this->setParam($key, $value);
+		}
+	}
 
     /**
      * Returns any files associated with the request. This is a copy of
@@ -324,7 +315,7 @@ class Request extends MessageAbstract
     {
         $contentType = $this->getContentType();
         if ($contentType) {
-            $contentTypeParts = preg_split("/\s*[;,]\s*/", $contentType);
+            $contentTypeParts = preg_split("/\\s*[;,]\\s*/", $contentType);
 
             return strtolower($contentTypeParts[0]);
         }
@@ -340,7 +331,7 @@ class Request extends MessageAbstract
         $contentType = $this->getContentType();
         $contentTypeParams = array();
         if ($contentType) {
-            $contentTypeParts = preg_split("/\s*[;,]\s*/", $contentType);
+            $contentTypeParts = preg_split("/\\s*[;,]\\s*/", $contentType);
             $contentTypePartsLength = count($contentTypeParts);
             for ($i = 1; $i < $contentTypePartsLength; $i++) {
                 $paramParts = explode("=", $contentTypeParts[$i]);

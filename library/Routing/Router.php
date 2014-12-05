@@ -13,29 +13,33 @@ namespace Wilson\Routing;
 
 use ReflectionClass;
 use ReflectionMethod;
-use Wilson\Caching\CacheInterface;
+use Wilson\Cache;
 
 class Router
 {
-    /**
-     * @var CacheInterface
-     */
-    protected $cache;
-
-    /**
-     * @var UrlTools
-     */
-    protected $urlTools;
+	const ROUTE_REGEX = "/@route ([A-Z]+) ([^\r\n]+)/";
+	const CONDITION_REGEX = "/@where ([\\w]+) ([^\r\n]+)/";
+	const THROUGH_REGEX = "/@through ([\\w\\_]+)/";
 
 	/**
-	 * @param CacheInterface $cache
+	 * @var Cache
+	 */
+	protected $cache;
+
+	/**
+	 * @var UrlTools
+	 */
+	protected $urlTools;
+
+	/**
+	 * @param Cache $cache
 	 * @param UrlTools $urlTools
 	 */
-    public function __construct(CacheInterface $cache, UrlTools $urlTools)
-    {
-        $this->cache = $cache;
-        $this->urlTools = $urlTools;
-    }
+	public function __construct(Cache $cache, UrlTools $urlTools)
+	{
+		$this->cache = $cache;
+		$this->urlTools = $urlTools;
+	}
 
 	/**
 	 * @param array $resources
@@ -43,130 +47,118 @@ class Router
 	 * @param string $uri
 	 * @return Route
 	 */
-    public function match(array $resources, $method, $uri)
-    {
+	public function match(array $resources, $method, $uri)
+	{
 		$route = new Route;
 		$route->status = Route::NOT_FOUND;
 
-        foreach ($resources as $name => $resource) {
-            $table = $this->buildTable($name, $resource);
+		foreach ($resources as $name => $resource) {
+			$table = $this->buildTable($name, $resource);
 
-            foreach ($table as $expr => $handlers) {
-                if ($this->urlTools->match($expr, $uri)) {
+			foreach ($table as $expr => $handlers) {
+				if ($this->urlTools->match($expr, $uri)) {
 
-                    if (isset($handlers[$method])) {
-						$route->status   = Route::FOUND;
+					if (isset($handlers[$method])) {
+						$route->status = Route::FOUND;
 						$route->handlers = $this->buildHandlers($resource, $handlers[$method]);
-						$route->params   = $this->urlTools->parameters($expr, $uri);
+						$route->params = $this->urlTools->parameters($expr, $uri);
 
-                    } else {
-						$route->status  = Route::METHOD_NOT_ALLOWED;
+					} else {
+						$route->status = Route::METHOD_NOT_ALLOWED;
 						$route->allowed = array_keys($handlers);
-                    }
-                }
-            }
-        }
+					}
+				}
+			}
+		}
 
-        return $route;
-    }
+		return $route;
+	}
 
 	/**
 	 * @param $resourceName
 	 * @param $resource
 	 * @return array
 	 */
-    protected function buildTable($resourceName, $resource)
-    {
-        $key = "router_" . $resourceName;
+	public function buildTable($resourceName, $resource)
+	{
+		$key = "router_" . $resourceName;
 
-        if ($this->cache->has($key)) {
-            return $this->cache->get($key);
-        }
+		if ($this->cache->has($key)) {
+			return $this->cache->get($key);
+		}
 
-        $table = array();
-        $reflection = new ReflectionClass($resource);
+		$table = array();
+		$reflection = new ReflectionClass($resource);
 
-        foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            /** @var ReflectionMethod $method */
-            $comment = $method->getDocComment();
+		foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+			/** @var ReflectionMethod $method */
+			$comment = $method->getDocComment();
 
-            if (strpos($comment, "@route") === false) {
-                continue;
-            }
+			if (strpos($comment, "@route") === false) {
+				continue;
+			}
 
-            list($httpMethod, $uri) = $this->routeAnnotation($comment);
-            $conditions = $this->routeConditions($comment);
-            $middleware = $this->routeMiddleware($comment);
+			$notation = $this->parseAnnotations($comment);
+			$compiled = $this->urlTools->compile($notation->uri, $notation->conditions);
 
-            $compiled = $this->urlTools->compile($uri, $conditions);
+			if (!isset($table[$compiled])) {
+				$table[$compiled] = array();
+			}
 
-            if (!isset($table[$compiled])) {
-                $table[$compiled] = array();
-            }
+			$notation->middleware[] = $method->name;
 
-            $handlers = array();
-            foreach ($middleware as $ware) {
-                $handlers[] = $ware;
-            }
-            $handlers[] = $method->name;
+			$table[$compiled][$notation->method] = $notation->middleware;
+		}
 
-            $table[$compiled][$httpMethod] = $handlers;
-        }
+		$this->cache->set($key, $table);
+		return $table;
+	}
 
-        $this->cache->set($key, $table);
-        return $table;
-    }
+	/**
+	 * This parses a comment for framework relevant annotations. This is kept as
+	 * a single method call to maximise efficiency when caching is not available.
+	 *
+	 * @param string $comment
+	 * @return object
+	 */
+	public function parseAnnotations($comment)
+	{
+		$annotations = array(
+			"method" => "",
+			"uri" => "",
+			"conditions" => array(),
+			"middleware" => array()
+		);
 
-    protected function buildHandlers($resource, array $handlers)
-    {
-        $return = array();
-        foreach ($handlers as $handler) {
-            $return[] = array($resource, $handler);
-        }
-        return $return;
-    }
+		if (preg_match(Router::ROUTE_REGEX, $comment, $matches)) {
+			$annotations["method"] = $matches[1];
+			$annotations["uri"] = $matches[2];
+		}
 
-    /**
-     * Returns the route associated with the annotation.
-     *
-     * @param string $comment
-     * @return <method, uri>|null
-     */
-    protected function routeAnnotation($comment)
-    {
-        if (preg_match("/@route (GET|POST|DELETE|PUT|PATCH|OPTIONS|HEAD) ([^\r\n]+)/", $comment, $matches)) {
-            return array($matches[1], $matches[2]);
-        }
+		if (preg_match_all(Router::CONDITION_REGEX, $comment, $matches)) {
+			for ($i = 0, $len = count($matches[1]); $i < $len; $i++) {
+				$annotations["conditions"][$matches[1][$i]] = $matches[2][$i];
+			}
+		}
 
-        return null;
-    }
+		if (preg_match_all(Router::THROUGH_REGEX, $comment, $matches)) {
+			$annotations["middleware"] = $matches[1];
+		}
 
-    /**
-     * Returns the route associated with the annotation.
-     *
-     * @param string $comment
-     * @return <name, expr>[]|null
-     */
-    protected function routeConditions($comment)
-    {
-        if (preg_match_all("/@where ([\\w]+) ([^\r\n]+)/", $comment, $matches)) {
-            $conditions = array();
-            for ($i = 0, $len = count($matches[1]); $i < $len; $i++) {
-                $conditions[$matches[1][$i]] = $matches[2][$i];
-            }
+		return (object)$annotations;
+	}
 
-            return $conditions;
-        }
-
-        return array();
-    }
-
-    protected function routeMiddleware($comment)
-    {
-        if (preg_match_all("/@through ([\\w\\_]+)/", $comment, $matches)) {
-            return $matches[1];
-        }
-
-        return array();
-    }
+	/**
+	 * @param object $resource
+	 * @param array $handlers
+	 * @return array
+	 */
+	public function buildHandlers($resource, array $handlers)
+	{
+		$return = array();
+		foreach ($handlers as $handler) {
+			$return[] = array($resource, $handler);
+		}
+		return $return;
+	}
 }
