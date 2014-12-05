@@ -12,8 +12,9 @@
 namespace Wilson\Tests\Routing;
 
 use Wilson\Routing\Router;
+use Prophecy\PhpUnit\ProphecyTestCase;
 
-class RouterTest extends \PHPUnit_Framework_TestCase
+class RouterTest extends ProphecyTestCase
 {
 
 }

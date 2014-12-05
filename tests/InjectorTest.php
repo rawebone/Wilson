@@ -8,10 +8,11 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace Wilson\Tests\Injection;
 
+namespace Wilson\Tests;
+
+use Wilson\Injector;
 use Prophecy\PhpUnit\ProphecyTestCase;
-use Wilson\Injection\Injector;
 
 class InjectorTest extends ProphecyTestCase
 {
@@ -27,8 +28,7 @@ class InjectorTest extends ProphecyTestCase
 	function testRequiresForFunction()
 	{
 		$injector = new Injector();
-		$required = $injector->requires(function ($a, $b) {
-			});
+		$required = $injector->requires(function ($a, $b) {});
 
 		$this->assertEquals(array("a", "b"), $required);
 	}
@@ -72,8 +72,7 @@ class InjectorTest extends ProphecyTestCase
 	function testResolveErrorsWhenCycling()
 	{
 		$injector = new Injector();
-		$injector->service("a", function ($a) {
-			});
+		$injector->service("a", function ($a) {});
 		$injector->resolve("a");
 	}
 
@@ -83,8 +82,7 @@ class InjectorTest extends ProphecyTestCase
 	function testResolveFailsWhenServiceNotDefined()
 	{
 		$injector = new Injector();
-		$injector->service("a", function ($b) {
-			});
+		$injector->service("a", function ($b) {});
 		$injector->resolve("a");
 	}
 
@@ -103,12 +101,9 @@ class InjectorTest extends ProphecyTestCase
 	function testServiceFailsDueToResolvedService()
 	{
 		$injector = new Injector();
-		$injector->service("a", function () {
-				return true;
-			});
+		$injector->service("a", function () { return true; });
 		$this->assertEquals(true, $injector->resolve("a"));
-		$injector->service("a", function () {
-			});
+		$injector->service("a", function () {});
 	}
 
 	function testInjection()
@@ -116,10 +111,13 @@ class InjectorTest extends ProphecyTestCase
 		$self = $this;
 		$injector = new Injector();
 
-		$injector->service("a", function () use ($self) {
-				return $self;
-			});
-		$injector->inject(function ($a) use ($self) {
+		$injector->service("a", function () use ($self)
+		{
+			return $self;
+		});
+
+		$injector->inject(function ($a) use ($self)
+		{
 			$self->assertEquals($self, $a);
 		});
 	}
@@ -136,15 +134,20 @@ class InjectorTest extends ProphecyTestCase
 	function testResolutionWithExtension()
 	{
 		$injector = new Injector();
-		$injector->service("a", function () {
-				return new \stdClass();
-			});
-		$injector->extend("a", function ($a) {
-				$a->extended = 1;
-			});
-		$injector->extend("a", function ($a) {
-				$a->extended = 2;
-			});
+		$injector->service("a", function ()
+		{
+			return new \stdClass();
+		});
+
+		$injector->extend("a", function ($a)
+		{
+			$a->extended = 1;
+		});
+
+		$injector->extend("a", function ($a)
+		{
+			$a->extended = 2;
+		});
 
 		$resolved = $injector->resolve("a");
 		$this->assertEquals(true, isset($resolved->extended));
