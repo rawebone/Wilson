@@ -15,6 +15,12 @@ use ReflectionClass;
 use ReflectionMethod;
 use Wilson\Cache;
 
+/**
+ * This routing implementation is based off of nikic/fast-route, rawebone/micro
+ * and symfony/routing. The router creates a table based off of all of the
+ * resources which is divided by "static" and "dynamic" routes, the routes are
+ * defined in public object methods which have a "@route" annotation.
+ */
 class Router
 {
 	const ROUTE_REGEX = "/@route ([A-Z]+) ([^\r\n]+)/";
@@ -52,42 +58,70 @@ class Router
 		$route = new Route;
 		$route->status = Route::NOT_FOUND;
 
-		foreach ($resources as $name => $resource) {
-			$table = $this->buildTable($name, $resource);
+		$handler = null;
+		$table   = $this->getTable($resources);
 
-			foreach ($table as $expr => $handlers) {
+		if (isset($table["static"][$uri])) {
+			$handler = $table["static"][$uri];
+
+		} else {
+			foreach ($table["dynamic"] as $expr => $handlers) {
 				if ($this->urlTools->match($expr, $uri)) {
-
-					if (isset($handlers[$method])) {
-						$route->status = Route::FOUND;
-						$route->handlers = $this->buildHandlers($resource, $handlers[$method]);
-						$route->params = $this->urlTools->parameters($expr, $uri);
-
-					} else {
-						$route->status = Route::METHOD_NOT_ALLOWED;
-						$route->allowed = array_keys($handlers);
-					}
+					$handler = $handlers;
+					$route->params = $this->urlTools->parameters($expr, $uri);
+					break;
 				}
 			}
+		}
+
+		if (isset($handler[$method])) {
+			$resource = $resources[$handler["_name"]];
+
+			$route->status = Route::FOUND;
+			$route->handlers = $this->buildHandlers($resource, $handler[$method]);
+
+		} else {
+			$route->status = Route::METHOD_NOT_ALLOWED;
+			$route->allowed = array_keys($handler);
 		}
 
 		return $route;
 	}
 
 	/**
-	 * @param $resourceName
+	 * @param array $resources
+	 * @return array
+	 */
+	public function getTable(array $resources)
+	{
+		if ($this->cache->has("router")) {
+			return $this->cache->get("router");
+		}
+
+		$table = array(
+			"static"  => array(),
+			"dynamic" => array()
+		);
+
+		foreach ($resources as $resource) {
+			$routes = $this->buildTable($resource);
+
+			$table["static"]  += $routes["static"];
+			$table["dynamic"] += $routes["dynamic"];
+		}
+		return $table;
+	}
+
+	/**
 	 * @param $resource
 	 * @return array
 	 */
-	public function buildTable($resourceName, $resource)
+	public function buildTable($resource)
 	{
-		$key = "router_" . $resourceName;
-
-		if ($this->cache->has($key)) {
-			return $this->cache->get($key);
-		}
-
-		$table = array();
+		$table = array(
+			"static"  => array(),
+			"dynamic" => array()
+		);
 		$reflection = new ReflectionClass($resource);
 
 		foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
@@ -101,8 +135,11 @@ class Router
 			$notation = $this->parseAnnotations($comment);
 			$compiled = $this->urlTools->compile($notation->uri, $notation->conditions);
 
+			$type = ($compiled === $notation->uri ? "static" : "dynamic");
+
 			if (!isset($table[$compiled])) {
-				$table[$compiled] = array();
+				$table[$type][$compiled] = array();
+				$table[$type][$compiled]["_name"] = $reflection->getName();
 			}
 
 			$notation->middleware[] = $method->name;
@@ -110,7 +147,6 @@ class Router
 			$table[$compiled][$notation->method] = $notation->middleware;
 		}
 
-		$this->cache->set($key, $table);
 		return $table;
 	}
 

@@ -81,6 +81,23 @@ class Api
 	}
 
 	/**
+	 * Processes over all of the registered resources and creates the
+	 * routing table. This can offer a significant time saving when
+	 * dispatching the request.
+	 */
+	public function createCache()
+	{
+		/** @var Cache $cache */
+		$cache = $this->injector->resolve("_cache");
+
+		/** @var Router $router */
+		$router = $this->injector->resolve("_router");
+
+		$table = $router->getTable($this->resources);
+		$cache->set("router", $table);
+	}
+
+	/**
 	 * Dispatches the request and sends the response.
 	 *
 	 * @param Router $_router
