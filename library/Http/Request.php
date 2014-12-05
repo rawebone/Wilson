@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Slim\Http;
+namespace Wilson\Http;
 
 /**
  * Slim - a micro PHP 5 framework
@@ -43,7 +43,7 @@ namespace Slim\Http;
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-class Request
+class Request extends MessageAbstract
 {
     const METHOD_HEAD = 'HEAD';
     const METHOD_GET = 'GET';
@@ -57,217 +57,263 @@ class Request
     /**
      * @var array
      */
-    protected static $formDataMediaTypes = array('application/x-www-form-urlencoded');
+    protected static $formDataMediaTypes = array("application/x-www-form-urlencoded");
 
     /**
-     * Application Environment
-     * @var \Slim\Environment
+     * @var string
      */
-    protected $env;
+    protected $method;
 
     /**
-     * HTTP Headers
-     * @var \Slim\Http\Headers
+     * @var string|null
      */
-    public $headers;
+    protected $originalMethod;
 
     /**
-     * HTTP Cookies
-     * @var \Slim\Helper\Set
+     * @var string
      */
-    public $cookies;
+    protected $ip;
 
     /**
-     * Constructor
-     * @param \Slim\Environment $env
+     * @var string
      */
-    public function __construct(\Slim\Environment $env)
+    protected $physicalPath;
+
+    /**
+     * @var string
+     */
+    protected $pathInfo;
+
+    /**
+     * @var string
+     */
+    protected $queryString;
+
+    /**
+     * @var string
+     */
+    protected $serverName;
+
+    /**
+     * @var int
+     */
+    protected $serverPort;
+
+    /**
+     * @var string
+     */
+    protected $protocol;
+
+    /**
+     * @var string
+     */
+    protected $content;
+
+    /**
+     * $_GET superglobal
+     *
+     * @var array
+     */
+    protected $get = array();
+
+    /**
+     * $_POST superglobal
+     *
+     * @var array
+     */
+    protected $post = array();
+
+    /**
+     * $_FILES superglobal
+     *
+     * @var array
+     */
+    protected $files = array();
+
+    public function __construct(array $server, array $get, array $post,
+                                array $cookies, array $files, $input = "php://input")
     {
-        $this->env = $env;
-        $this->headers = new \Slim\Http\Headers(\Slim\Http\Headers::extract($env));
-        $this->cookies = new \Slim\Helper\Set(\Slim\Http\Util::parseCookieHeader($env['HTTP_COOKIE']));
+        $this->get = $get;
+        $this->post = $post;
+        $this->files = $files;
+
+        $this->method = $server["REQUEST_METHOD"];
+        $this->ip = $server["REMOTE_ADDR"];
+        $this->serverName = $server["SERVER_NAME"];
+        $this->serverPort = $server["SERVER_PORT"];
+
+        // Server params
+        $scriptName = $server["SCRIPT_NAME"]; // <-- "/foo/index.php"
+        $requestUri = $server["REQUEST_URI"]; // <-- "/foo/bar?test=abc" or "/foo/index.php/bar?test=abc"
+        $queryString = isset($server["QUERY_STRING"]) ? $server["QUERY_STRING"] : ""; // <-- "test=abc" or ""
+
+        // Physical path
+        if (strpos($requestUri, $scriptName) !== false) {
+            $physicalPath = $scriptName; // <-- Without rewriting
+        } else {
+            $physicalPath = str_replace("\\", "", dirname($scriptName)); // <-- With rewriting
+        }
+        $this->physicalPath = rtrim($physicalPath, "/"); // <-- Remove trailing slashes
+
+        // Virtual path
+        $path = substr_replace($requestUri, "", 0, strlen($physicalPath)); // <-- Remove physical path
+        $path = str_replace("?" . $queryString, "", $path); // <-- Remove query string
+        $this->pathInfo = "/" . ltrim($path, "/"); // <-- Ensure leading slash
+
+        // Query string (without leading "?")
+        $this->queryString = $queryString;
+
+        $this->protocol = empty($server["HTTPS"]) || $server["HTTPS"] === "off" ? "http" : "https";
+
+        // Input stream (readable one time only; not available for multipart/form-data requests)
+        $content = @file_get_contents($input);
+        if (!$content) {
+            $content = "";
+        }
+        $this->content = $content;
+
+        // Process Headers into real form (HTTP_CONTENT_TYPE => Content-Type)
+        foreach ($server as $key => $value) {
+            if (strpos($key, "HTTP_COOKIE") === 0) {
+                // Cookies are handled using the $cookie parameter
+                continue;
+            }
+
+            if ($value && strpos($key, "HTTP_") === 0) {
+                $name = strtr(substr($key, 5), '_', ' ');
+                $name = strtr(ucwords(strtolower($name)), ' ', '-');
+
+                $this->setHeader($name, $value);
+                continue;
+            }
+
+            if ($value && strpos($key, "CONTENT_") === 0) {
+                $name = substr($key, 8); // Content-
+                $name = "Content-" . (($name == "MD5") ? $name : ucfirst(strtolower($name)));
+
+                $this->setHeader($name, $value);
+                continue;
+            }
+        }
+
+        // Method Override
+        if ($this->hasHeader("X-Http-Method-Override")) {
+            $this->originalMethod = $this->method;
+            $this->method = strtoupper($this->getHeader("X-Http-Method-Override"));
+        }
+
+        // Cookies
+        foreach ($cookies as $cookie) {
+
+        }
     }
 
     /**
-     * Get HTTP method
      * @return string
      */
     public function getMethod()
     {
-        return $this->env['REQUEST_METHOD'];
+        return $this->method;
     }
 
     /**
-     * Is this an AJAX request?
+     * Returns a string if a method override has been used.
+     *
+     * @return null|string
+     */
+    public function getOriginalMethod()
+    {
+        return $this->originalMethod;
+    }
+
+    /**
+     * @return string
+     */
+    public function getContent()
+    {
+        return $this->content;
+    }
+
+    /**
      * @return bool
      */
     public function isAjax()
     {
-        if ($this->params("isajax")) {
-            return true;
-        } elseif (isset($this->headers["X_REQUESTED_WITH"]) && $this->headers["X_REQUESTED_WITH"] === "XMLHttpRequest") {
-            return true;
-        } else {
-            return false;
-        }
+        return $this->getHeader("X-Requested-With", "") === "XMLHttpRequest";
     }
 
     /**
-     * Fetch GET and POST data
+     * Returns a parameter from the GET and POST data associated with the request.
+     * This is less performant that get() or post(), and GET data is prioritised.
      *
-     * This method returns a union of GET and POST data as a key-value array, or the value
-     * of the array key if requested; if the array key does not exist, NULL is returned.
-     *
-     * @param  string           $key
-     * @return array|mixed|null
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
      */
-    public function params($key = null)
+    public function param($key, $default = null)
     {
-        $union = array_merge($this->get(), $this->post());
-        if ($key) {
-            return isset($union[$key]) ? $union[$key] : null;
+        if (($get = $this->get($key))) {
+            return $get;
         }
 
-        return $union;
+        if (($post = $this->post($key))) {
+            return $post;
+        }
+
+        return $default;
     }
 
     /**
-     * Fetch GET data
+     * Returns an entry from the GET data or a default value.
      *
-     * This method returns a key-value array of data sent in the HTTP request query string, or
-     * the value of the array key if requested; if the array key does not exist, NULL is returned.
-     *
-     * @param  string           $key
-     * @param  mixed            $default Default return value when key does not exist
-     * @return array|mixed|null
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
      */
-    public function get($key = null, $default = null)
+    public function get($key, $default = null)
     {
-        if (!isset($this->env['slim.request.query_hash'])) {
-            $output = array();
-            if (function_exists('mb_parse_str') && !isset($this->env['slim.tests.ignore_multibyte'])) {
-                mb_parse_str($this->env['QUERY_STRING'], $output);
-            } else {
-                parse_str($this->env['QUERY_STRING'], $output);
-            }
-            $this->env['slim.request.query_hash'] = Util::stripSlashesIfMagicQuotes($output);
-        }
-        if ($key) {
-            if (isset($this->env['slim.request.query_hash'][$key])) {
-                return $this->env['slim.request.query_hash'][$key];
-            } else {
-                return $default;
-            }
-        } else {
-            return $this->env['slim.request.query_hash'];
-        }
+        return isset($this->get[$key]) ? $this->get[$key] : $default;
     }
 
     /**
-     * Fetch POST data
+     * Returns an entry from the POST data or a default value.
      *
-     * This method returns a key-value array of data sent in the HTTP request body, or
-     * the value of a hash key if requested; if the array key does not exist, NULL is returned.
-     *
-     * @param  string           $key
-     * @param  mixed            $default Default return value when key does not exist
-     * @return array|mixed|null
-     * @throws \RuntimeException If environment input is not available
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
      */
-    public function post($key = null, $default = null)
+    public function post($key, $default = null)
     {
-        if (!isset($this->env['slim.input'])) {
-            throw new \RuntimeException('Missing slim.input in environment variables');
-        }
-        if (!isset($this->env['slim.request.form_hash'])) {
-            $this->env['slim.request.form_hash'] = array();
-            if ($this->isFormData() && is_string($this->env['slim.input'])) {
-                $output = array();
-                if (function_exists('mb_parse_str') && !isset($this->env['slim.tests.ignore_multibyte'])) {
-                    mb_parse_str($this->env['slim.input'], $output);
-                } else {
-                    parse_str($this->env['slim.input'], $output);
-                }
-                $this->env['slim.request.form_hash'] = Util::stripSlashesIfMagicQuotes($output);
-            } else {
-                $this->env['slim.request.form_hash'] = Util::stripSlashesIfMagicQuotes($_POST);
-            }
-        }
-        if ($key) {
-            if (isset($this->env['slim.request.form_hash'][$key])) {
-                return $this->env['slim.request.form_hash'][$key];
-            } else {
-                return $default;
-            }
-        } else {
-            return $this->env['slim.request.form_hash'];
-        }
+        return isset($this->post[$key]) ? $this->post[$key] : $default;
     }
 
     /**
-     * Fetch COOKIE data
+     * Returns any files associated with the request. This is a copy of
+     * the $_FILES superglobal.
      *
-     * This method returns a key-value array of Cookie data sent in the HTTP request, or
-     * the value of a array key if requested; if the array key does not exist, NULL is returned.
-     *
-     * @param  string            $key
-     * @return array|string|null
+     * @return array
      */
-    public function cookies($key = null)
+    public function files()
     {
-        if ($key) {
-            return $this->cookies->get($key);
-        }
-
-        return $this->cookies;
+        return $this->files;
     }
 
     /**
-     * Does the Request body contain parsed form data?
      * @return bool
      */
     public function isFormData()
     {
-        $method = isset($this->env['slim.method_override.original_method']) ? $this->env['slim.method_override.original_method'] : $this->getMethod();
+        $method = $this->getOriginalMethod() ?: $this->getMethod();
 
-        return ($method === self::METHOD_POST && is_null($this->getContentType())) || in_array($this->getMediaType(), self::$formDataMediaTypes);
+        return ($method === "POST" && is_null($this->getContentType())) || in_array($this->getMediaType(), self::$formDataMediaTypes);
     }
 
     /**
-     * Get Headers
-     *
-     * This method returns a key-value array of headers sent in the HTTP request, or
-     * the value of a hash key if requested; if the array key does not exist, NULL is returned.
-     *
-     * @param  string $key
-     * @param  mixed  $default The default value returned if the requested header is not available
-     * @return mixed
-     */
-    public function headers($key = null, $default = null)
-    {
-        if ($key) {
-            return $this->headers->get($key, $default);
-        }
-
-        return $this->headers;
-    }
-
-    /**
-     * Get Body
-     * @return string
-     */
-    public function getBody()
-    {
-        return $this->env['slim.input'];
-    }
-
-    /**
-     * Get Content Type
      * @return string|null
      */
     public function getContentType()
     {
-        return $this->headers->get('CONTENT_TYPE');
+        return $this->getHeader("Content-Type");
     }
 
     /**
@@ -278,7 +324,7 @@ class Request
     {
         $contentType = $this->getContentType();
         if ($contentType) {
-            $contentTypeParts = preg_split('/\s*[;,]\s*/', $contentType);
+            $contentTypeParts = preg_split("/\s*[;,]\s*/", $contentType);
 
             return strtolower($contentTypeParts[0]);
         }
@@ -287,7 +333,6 @@ class Request
     }
 
     /**
-     * Get Media Type Params
      * @return array
      */
     public function getMediaTypeParams()
@@ -295,10 +340,10 @@ class Request
         $contentType = $this->getContentType();
         $contentTypeParams = array();
         if ($contentType) {
-            $contentTypeParts = preg_split('/\s*[;,]\s*/', $contentType);
+            $contentTypeParts = preg_split("/\s*[;,]\s*/", $contentType);
             $contentTypePartsLength = count($contentTypeParts);
             for ($i = 1; $i < $contentTypePartsLength; $i++) {
-                $paramParts = explode('=', $contentTypeParts[$i]);
+                $paramParts = explode("=", $contentTypeParts[$i]);
                 $contentTypeParams[strtolower($paramParts[0])] = $paramParts[1];
             }
         }
@@ -307,90 +352,74 @@ class Request
     }
 
     /**
-     * Get Content Charset
      * @return string|null
      */
     public function getContentCharset()
     {
         $mediaTypeParams = $this->getMediaTypeParams();
-        if (isset($mediaTypeParams['charset'])) {
-            return $mediaTypeParams['charset'];
+        if (isset($mediaTypeParams["charset"])) {
+            return $mediaTypeParams["charset"];
         }
 
         return null;
     }
 
     /**
-     * Get Content-Length
      * @return int
      */
     public function getContentLength()
     {
-        return $this->headers->get('CONTENT_LENGTH', 0);
+        return $this->getHeader("Content-Length", 0);
     }
 
     /**
-     * Get Host
      * @return string
      */
     public function getHost()
     {
-        if (isset($this->env['HTTP_HOST'])) {
-            if (strpos($this->env['HTTP_HOST'], ':') !== false) {
-                $hostParts = explode(':', $this->env['HTTP_HOST']);
-
-                return $hostParts[0];
+        if ($this->hasHeader("Host")) {
+            $host = $this->getHeader("Host");
+            if (strpos($host, ":") !== false) {
+                $hostParts = explode(":", $host);
+                $host = $hostParts[0];
             }
 
-            return $this->env['HTTP_HOST'];
+            return $host;
         }
 
-        return $this->env['SERVER_NAME'];
+        return $this->serverName;
     }
 
     /**
-     * Get Host with Port
      * @return string
      */
     public function getHostWithPort()
     {
-        return sprintf('%s:%s', $this->getHost(), $this->getPort());
+        return sprintf("%s:%s", $this->getHost(), $this->getPort());
     }
 
     /**
-     * Get Port
      * @return int
      */
     public function getPort()
     {
-        return (int)$this->env['SERVER_PORT'];
+        return (int)$this->serverPort;
     }
 
     /**
-     * Get Scheme (https or http)
      * @return string
      */
-    public function getScheme()
+    public function getProtocol()
     {
-        return $this->env['slim.url_scheme'];
+        return $this->protocol;
     }
 
     /**
-     * Get Script Name (physical path)
      * @return string
      */
-    public function getScriptName()
+    public function getPhysicalPath()
     {
-        return $this->env['SCRIPT_NAME'];
-    }
-
-    /**
-     * LEGACY: Get Root URI (alias for Slim_Http_Request::getScriptName)
-     * @return string
-     */
-    public function getRootUri()
-    {
-        return $this->getScriptName();
+        return $this->physicalPath;
     }
 
     /**
@@ -399,25 +428,15 @@ class Request
      */
     public function getPath()
     {
-        return $this->getScriptName() . $this->getPathInfo();
+        return $this->getPhysicalPath() . $this->getPathInfo();
     }
 
     /**
-     * Get Path Info (virtual path)
      * @return string
      */
     public function getPathInfo()
     {
-        return $this->env['PATH_INFO'];
-    }
-
-    /**
-     * LEGACY: Get Resource URI (alias for Slim_Http_Request::getPathInfo)
-     * @return string
-     */
-    public function getResourceUri()
-    {
-        return $this->getPathInfo();
+        return $this->pathInfo;
     }
 
     /**
@@ -426,44 +445,27 @@ class Request
      */
     public function getUrl()
     {
-        $url = $this->getScheme() . '://' . $this->getHost();
-        if (($this->getScheme() === 'https' && $this->getPort() !== 443) || ($this->getScheme() === 'http' && $this->getPort() !== 80)) {
-            $url .= sprintf(':%s', $this->getPort());
+        $url = $this->getProtocol() . "://" . $this->getHost();
+        if (($this->getProtocol() === "https" && $this->getPort() !== 443) || ($this->getProtocol() === "http" && $this->getPort() !== 80)) {
+            $url .= sprintf(":%s", $this->getPort());
         }
 
         return $url;
     }
 
     /**
-     * Get IP
      * @return string
      */
     public function getIp()
     {
-        if (isset($this->env['X_FORWARDED_FOR'])) {
-            return $this->env['X_FORWARDED_FOR'];
-        } elseif (isset($this->env['CLIENT_IP'])) {
-            return $this->env['CLIENT_IP'];
+        if ($this->hasHeader("X-Forwarded-For")) {
+            return $this->getHeader("X-Forwarded-For");
+
+        } else if ($this->hasHeader("Client-Ip")) {
+            return $this->getHeader("Client-Ip");
+
+        } else {
+            return $this->ip;
         }
-
-        return $this->env['REMOTE_ADDR'];
-    }
-
-    /**
-     * Get Referrer
-     * @return string|null
-     */
-    public function getReferrer()
-    {
-        return $this->headers->get('HTTP_REFERER');
-    }
-
-    /**
-     * Get User Agent
-     * @return string|null
-     */
-    public function getUserAgent()
-    {
-        return $this->headers->get('HTTP_USER_AGENT');
     }
 }

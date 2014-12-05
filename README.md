@@ -52,7 +52,7 @@ class UserResource
     /**
      * @route GET /users
      */
-    public function collection(PDO $conn, Response $resp)
+    function collection(PDO $conn, Response $resp)
     {
         $result = $conn->query("SELECT * FROM table");
         
@@ -63,7 +63,7 @@ class UserResource
     /**
      * @route GET /users/{id}
      */
-    public function item(PDO $conn, Response $resp, Request $req)
+    function item(PDO $conn, Response $resp, Request $req)
     {
         $stmt = $conn->prepare("SELECT * FROM table WHERE id = ?");
         $stmt->execute(array($req->get("id"));
@@ -75,7 +75,7 @@ class UserResource
     /**
      * @route GET /users/{id:\d+}/notifications
      */
-    public function notifications()
+    function notifications()
     {
         // ...
     }
@@ -103,7 +103,6 @@ $api->attach(new UserResource())
 ## TODO
 
 * Improve Test Coverage
-* Implement middleware handling
 
 
 ## License
