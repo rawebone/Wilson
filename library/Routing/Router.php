@@ -78,15 +78,23 @@ class Router
 			}
 		}
 
-		if (isset($handler[$method])) {
-			$resource = $resources[$handler["_name"]];
+		if ($handler) {
+			if (isset($handler[$method])) {
+				$resource = $resources[$handler["_name"]];
 
-			$route->status = Router::FOUND;
-			$route->handlers = $this->buildHandlers($resource, $handler[$method]);
+				$route->status   = Router::FOUND;
+				$route->handlers = $this->buildHandlers($resource, $handler[$method]);
 
-		} else {
-			$route->status = Router::METHOD_NOT_ALLOWED;
-			$route->allowed = array_keys($handler);
+			} else {
+				$route->status  = Router::METHOD_NOT_ALLOWED;
+				$route->allowed = array();
+
+				foreach (array_keys($handler) as $method) {
+					if (strpos($method, "_name") === false) {
+						$route->allowed[] = $method;
+					}
+				}
+			}
 		}
 
 		return $route;

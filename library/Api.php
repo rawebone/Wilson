@@ -106,19 +106,19 @@ class Api
 	 */
 	public function dispatch(Router $_router, Request $req, Response $resp)
 	{
-		$route = $_router->match(
-			$this->resources,
+		$match = $_router->match(
+			$this->getResources(),
 			$req->getMethod(),
 			$req->getPathInfo()
 		);
 
-		switch ($route->status) {
+		switch ($match->status) {
 			case Router::NOT_FOUND:
 				$this->injector->inject($this->notFound);
 				break;
 
 			case Router::METHOD_NOT_ALLOWED:
-				$resp->setHeader("Allow", $route->allowed);
+				$resp->setHeader("Allow", $match->allowed);
 
 				if ($req->getMethod() === "OPTIONS") {
 					$resp->setStatus(200);
@@ -129,11 +129,11 @@ class Api
 				break;
 
 			case Router::FOUND:
-				$req->setParams($route->params);
+				$req->setParams($match->params);
 
 				// Traverse the middleware and handler, aborting if any
 				// of handlers fail.
-				foreach ($route->handlers as $handler) {
+				foreach ($match->handlers as $handler) {
 					if ($this->injector->inject($handler) === false) {
 						return;
 					}
@@ -194,5 +194,19 @@ class Api
 		{
 			return new Response($req);
 		});
+	}
+
+	/**
+	 * Returns an array of class_name -> object.
+	 *
+	 * @return array
+	 */
+	protected function getResources()
+	{
+		$resources = array();
+		foreach ($this->resources as $resource) {
+			$resources[get_class($resource)] = $resource;
+		}
+		return $resources;
 	}
 }
