@@ -9,14 +9,12 @@
  * file that was distributed with this source code.
  */
 
-namespace Wilson;
+namespace Wilson\Utils;
 
 /**
  * Injector provides a simple Service Injection mechanism. Service Injection
  * allows us to define dependencies easily and lazily which can then be resolved
  * on an ad-hoc basis.
- *
- * @package Wilson
  */
 class Injector
 {

@@ -16,6 +16,8 @@ use Wilson\Http\Request;
 use Wilson\Http\Response;
 use Wilson\Routing\Router;
 use Wilson\Routing\UrlTools;
+use Wilson\Utils\Cache;
+use Wilson\Utils\Injector;
 
 class Api
 {

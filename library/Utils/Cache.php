@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Wilson;
+namespace Wilson\Utils;
 
 /**
  * Cache is a sub-optimal way of caching data to disk, however it makes

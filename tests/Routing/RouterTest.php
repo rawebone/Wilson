@@ -11,12 +11,12 @@
 
 namespace Wilson\Tests\Routing;
 
-use Wilson\Cache;
+use Prophecy\Argument;
+use Prophecy\PhpUnit\ProphecyTestCase;
+use Prophecy\Prophecy\ObjectProphecy;
 use Wilson\Routing\Router;
 use Wilson\Routing\UrlTools;
-use Prophecy\Argument;
-use Prophecy\Prophecy\ObjectProphecy;
-use Prophecy\PhpUnit\ProphecyTestCase;
+use Wilson\Utils\Cache;
 
 class RouterTest extends ProphecyTestCase
 {
@@ -39,7 +39,7 @@ class RouterTest extends ProphecyTestCase
 	{
 		parent::setUp();
 
-		$this->cache = $this->prophesize("Wilson\\Cache");
+		$this->cache = $this->prophesize("Wilson\\Utils\\Cache");
 		$this->ut = $this->prophesize("Wilson\\Routing\\UrlTools");
 		$this->router = new Router($this->cache->reveal(), $this->ut->reveal());
 	}

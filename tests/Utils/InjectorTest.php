@@ -11,8 +11,8 @@
 
 namespace Wilson\Tests;
 
-use Wilson\Injector;
 use Prophecy\PhpUnit\ProphecyTestCase;
+use Wilson\Utils\Injector;
 
 class InjectorTest extends ProphecyTestCase
 {

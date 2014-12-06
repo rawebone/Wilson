@@ -9,11 +9,11 @@
  * file that was distributed with this source code.
  */
 
-namespace Wilson\Tests\Caching;
+namespace Wilson\Tests\Utils;
 
-use Wilson\Cache;
+use Wilson\Utils\Cache;
 
-class FileCacheTest extends \PHPUnit_Framework_TestCase
+class CacheTest extends \PHPUnit_Framework_TestCase
 {
 	function testStore()
 	{

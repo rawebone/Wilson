@@ -13,7 +13,7 @@ namespace Wilson\Routing;
 
 use ReflectionClass;
 use ReflectionMethod;
-use Wilson\Cache;
+use Wilson\Utils\Cache;
 
 /**
  * This routing implementation is based off of nikic/fast-route, rawebone/micro
