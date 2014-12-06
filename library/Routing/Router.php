@@ -144,7 +144,7 @@ class Router
 
 			$notation->middleware[] = $method->name;
 
-			$table[$compiled][$notation->method] = $notation->middleware;
+			$table[$type][$compiled][$notation->method] = $notation->middleware;
 		}
 
 		return $table;
