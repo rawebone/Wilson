@@ -27,6 +27,10 @@ class Router
 	const CONDITION_REGEX = "/@where ([\\w]+) ([^\r\n]+)/";
 	const THROUGH_REGEX = "/@through ([\\w\\_]+)/";
 
+	const FOUND = 1;
+	const NOT_FOUND = 2;
+	const METHOD_NOT_ALLOWED = 4;
+
 	/**
 	 * @var Cache
 	 */
@@ -51,12 +55,12 @@ class Router
 	 * @param array $resources
 	 * @param string $method
 	 * @param string $uri
-	 * @return Route
+	 * @return object
 	 */
 	public function match(array $resources, $method, $uri)
 	{
-		$route = new Route;
-		$route->status = Route::NOT_FOUND;
+		$route = new \stdClass();
+		$route->status = Router::NOT_FOUND;
 
 		$handler = null;
 		$table   = $this->getTable($resources);
@@ -77,11 +81,11 @@ class Router
 		if (isset($handler[$method])) {
 			$resource = $resources[$handler["_name"]];
 
-			$route->status = Route::FOUND;
+			$route->status = Router::FOUND;
 			$route->handlers = $this->buildHandlers($resource, $handler[$method]);
 
 		} else {
-			$route->status = Route::METHOD_NOT_ALLOWED;
+			$route->status = Router::METHOD_NOT_ALLOWED;
 			$route->allowed = array_keys($handler);
 		}
 

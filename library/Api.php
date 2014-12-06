@@ -14,7 +14,6 @@ namespace Wilson;
 use Exception;
 use Wilson\Http\Request;
 use Wilson\Http\Response;
-use Wilson\Routing\Route;
 use Wilson\Routing\Router;
 use Wilson\Routing\UrlTools;
 
@@ -114,11 +113,11 @@ class Api
 		);
 
 		switch ($route->status) {
-			case Route::NOT_FOUND:
+			case Router::NOT_FOUND:
 				$this->injector->inject($this->notFound);
 				break;
 
-			case Route::METHOD_NOT_ALLOWED:
+			case Router::METHOD_NOT_ALLOWED:
 				$resp->setHeader("Allow", $route->allowed);
 
 				if ($req->getMethod() === "OPTIONS") {
@@ -129,7 +128,7 @@ class Api
 				}
 				break;
 
-			case Route::FOUND:
+			case Router::FOUND:
 				$req->setParams($route->params);
 
 				// Traverse the middleware and handler, aborting if any
