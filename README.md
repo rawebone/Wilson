@@ -75,7 +75,7 @@ $api->injector->service("users", function (PDO $conn)
 if ($production) {
     $api->cachePath = "/path/to/cache.php";
     
-    if (is_file($api->cachePath) {
+    if (!is_file($api->cachePath) {
         $api->createCache();
     }
 }
