@@ -12,6 +12,9 @@
 namespace Wilson\Http;
 
 /**
+ * Parts of this code are based off the Slim\Http\Request and Slim\Environment
+ * objects included in the Slim framework.
+ *
  * Slim - a micro PHP 5 framework
  *
  * @author      Josh Lockhart <info@slimframework.com>
@@ -45,15 +48,6 @@ namespace Wilson\Http;
 
 class Request extends MessageAbstract
 {
-    const METHOD_HEAD = 'HEAD';
-    const METHOD_GET = 'GET';
-    const METHOD_POST = 'POST';
-    const METHOD_PUT = 'PUT';
-    const METHOD_PATCH = 'PATCH';
-    const METHOD_DELETE = 'DELETE';
-    const METHOD_OPTIONS = 'OPTIONS';
-    const METHOD_OVERRIDE = '_METHOD';
-
     /**
      * @var array
      */

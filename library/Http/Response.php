@@ -12,8 +12,8 @@
 namespace Wilson\Http;
 
 /**
- * This file is a refactored version of the Response object from the Slim
- * framework.
+ * Parts of this code are based off the Slim\Http\Response object included
+ * in the Slim framework.
  *
  * Slim - a micro PHP 5 framework
  *
