@@ -64,7 +64,7 @@ $api->resources[] = new UserResource();
 // methods later in our request handlers.
 $api->injector->instance("conn", new PDO(/* ... */));
 
-$api->injector->service("users", function (PDO $conn)
+$api->injector->factory("users", function (PDO $conn)
 {
     return new UserService($conn);
 });

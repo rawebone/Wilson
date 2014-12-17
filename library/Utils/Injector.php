@@ -21,7 +21,7 @@ class Injector
 	/**
 	 * @var callable[]
 	 */
-	protected $services = array();
+	protected $factories = array();
 
 	/**
 	 * @var callable[]
@@ -46,7 +46,7 @@ class Injector
 	 */
 	public function defined($name)
 	{
-		return isset($this->services[$name]) || isset($this->resolved[$name]);
+		return isset($this->factories[$name]) || isset($this->resolved[$name]);
 	}
 
 	/**
@@ -81,7 +81,10 @@ class Injector
 	}
 
 	/**
-	 * Registers a service with the Injector.
+	 * Registers a service factory with the Injector. A factory is a
+	 * callable which returns the configured service which allows us
+	 * to lazy load our and configure as required. This is slower than
+	 * registering an instance unless the service is IO bound.
 	 *
 	 * @param string $name
 	 * @param callable $fn
@@ -89,7 +92,7 @@ class Injector
 	 * @throws \InvalidArgumentException
 	 * @return $this
 	 */
-	public function service($name, $fn)
+	public function factory($name, $fn)
 	{
 		if (!is_callable($fn)) {
 			throw new \InvalidArgumentException("\$fn is expected to be a callable");
@@ -99,7 +102,7 @@ class Injector
 			throw new \RuntimeException("Service '$name' cannot be set as it has already been resolved");
 		}
 
-		$this->services[$name] = $fn;
+		$this->factories[$name] = $fn;
 		return $this;
 	}
 
@@ -168,14 +171,12 @@ class Injector
 
 		$this->beingResolved[$name] = true;
 
-		$args = array();
-		foreach ($this->requires($this->services[$name]) as $dependency) {
-			$args[$dependency] = $this->resolve($dependency);
-		}
+		$factory = $this->factories[$name];
+		$args = $this->dependencies($factory);
 
 		unset($this->beingResolved[$name]);
 
-		$resolved = $this->resolved[$name] = call_user_func_array($this->services[$name], $args);
+		$resolved = $this->resolved[$name] = call_user_func_array($factory, $args);
 
 		if (isset($this->extensions[$name])) {
 			foreach ($this->extensions[$name] as $extension) {

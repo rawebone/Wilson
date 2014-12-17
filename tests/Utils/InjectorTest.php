@@ -52,7 +52,7 @@ class InjectorTest extends ProphecyTestCase
 	function testRegisterServiceAndDefined()
 	{
 		$injector = new Injector();
-		$injector->service("a", function () {
+		$injector->factory("a", function () {
 			});
 		$this->assertEquals(true, $injector->defined("a"));
 	}
@@ -60,7 +60,7 @@ class InjectorTest extends ProphecyTestCase
 	function testResolveService()
 	{
 		$injector = new Injector();
-		$injector->service("a", function () {
+		$injector->factory("a", function () {
 				return true;
 			});
 		$this->assertEquals(true, $injector->resolve("a"));
@@ -72,7 +72,7 @@ class InjectorTest extends ProphecyTestCase
 	function testResolveErrorsWhenCycling()
 	{
 		$injector = new Injector();
-		$injector->service("a", function ($a) {});
+		$injector->factory("a", function ($a) {});
 		$injector->resolve("a");
 	}
 
@@ -82,7 +82,7 @@ class InjectorTest extends ProphecyTestCase
 	function testResolveFailsWhenServiceNotDefined()
 	{
 		$injector = new Injector();
-		$injector->service("a", function ($b) {});
+		$injector->factory("a", function ($b) {});
 		$injector->resolve("a");
 	}
 
@@ -92,7 +92,7 @@ class InjectorTest extends ProphecyTestCase
 	function testServiceFailsDueToBadFn()
 	{
 		$injector = new Injector();
-		$injector->service("test", null);
+		$injector->factory("test", null);
 	}
 
 	/**
@@ -101,9 +101,9 @@ class InjectorTest extends ProphecyTestCase
 	function testServiceFailsDueToResolvedService()
 	{
 		$injector = new Injector();
-		$injector->service("a", function () { return true; });
+		$injector->factory("a", function () { return true; });
 		$this->assertEquals(true, $injector->resolve("a"));
-		$injector->service("a", function () {});
+		$injector->factory("a", function () {});
 	}
 
 	function testInjection()
@@ -111,7 +111,7 @@ class InjectorTest extends ProphecyTestCase
 		$self = $this;
 		$injector = new Injector();
 
-		$injector->service("a", function () use ($self)
+		$injector->factory("a", function () use ($self)
 		{
 			return $self;
 		});
@@ -134,7 +134,7 @@ class InjectorTest extends ProphecyTestCase
 	function testResolutionWithExtension()
 	{
 		$injector = new Injector();
-		$injector->service("a", function ()
+		$injector->factory("a", function ()
 		{
 			return new \stdClass();
 		});

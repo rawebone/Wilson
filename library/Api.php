@@ -172,27 +172,27 @@ class Api
 		$this->injector->instance("_api", $this);
 		$this->injector->instance("_injector", $this->injector);
 
-		$this->injector->service("_ut", function ()
+		$this->injector->factory("_ut", function ()
 		{
 			return new UrlTools();
 		});
 
-		$this->injector->service("_cache", function (Api $_api)
+		$this->injector->factory("_cache", function (Api $_api)
 		{
 			return new Cache($_api->cachePath);
 		});
 
-		$this->injector->service("_router", function ($_cache, $_ut)
+		$this->injector->factory("_router", function ($_cache, $_ut)
 		{
 			return new Router($_cache, $_ut);
 		});
 
-		$this->injector->service("req", function ()
+		$this->injector->factory("req", function ()
 		{
 			return new Request($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES);
 		});
 
-		$this->injector->service("resp", function ($req)
+		$this->injector->factory("resp", function ($req)
 		{
 			return new Response($req);
 		});
