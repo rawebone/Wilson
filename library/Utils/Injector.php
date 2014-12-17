@@ -72,10 +72,6 @@ class Injector
 	 */
 	public function dependencies($fn)
 	{
-		if (!is_callable($fn)) {
-			throw new \InvalidArgumentException("\$fn is expected to be a callable");
-		}
-
 		$args = array();
 		foreach ($this->requires($fn) as $dependency) {
 			$args[$dependency] = $this->resolve($dependency);
