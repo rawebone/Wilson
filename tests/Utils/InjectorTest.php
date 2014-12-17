@@ -22,7 +22,7 @@ class InjectorTest extends ProphecyTestCase
 	function testRequiresFailsWithNonCallable()
 	{
 		$injector = new Injector();
-		$injector->requires("abc");
+		$injector->requires(null);
 	}
 
 	function testRequiresForFunction()

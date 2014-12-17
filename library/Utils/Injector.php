@@ -199,16 +199,14 @@ class Injector
 	 */
 	public function requires($fn)
 	{
-		if (!is_callable($fn)) {
-			throw new \InvalidArgumentException("\$fn is expected to be a callable");
-		}
-
-		if (is_object($fn) && method_exists($fn, "__invoke")) {
-			$reflection = new \ReflectionMethod($fn, "__invoke");
-		} else if (is_array($fn)) {
+		if (is_array($fn)) {
 			$reflection = new \ReflectionMethod($fn[0], $fn[1]);
-		} else {
+		} else if ($fn instanceof \Closure || is_string($fn)) {
 			$reflection = new \ReflectionFunction($fn);
+		} else if (is_object($fn) && method_exists($fn, "__invoke")) {
+			$reflection = new \ReflectionMethod($fn, "__invoke");
+		} else {
+			throw new \InvalidArgumentException("\$fn is expected to be a callable");
 		}
 
 		$required = array();
