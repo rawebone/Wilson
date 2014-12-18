@@ -52,6 +52,18 @@ class Api
 	public $notFound;
 
 	/**
+	 * This handler is used to prepare a request and response during dispatch.
+	 * The signature for this callable is:
+	 *
+	 * <code>
+	 * function (Request $request, Response $response) {}
+	 * </code>
+	 *
+	 * @var callable
+	 */
+	public $prepare;
+
+	/**
 	 * Holds all of the objects that define your API. These should be defined as:
 	 *
 	 * <code>
@@ -83,6 +95,7 @@ class Api
 	public function __construct()
 	{
 		$this->services = new Services();
+		$this->prepare  = function () { };
 
 		$this->error = function (Request $request, Response $response,
 								 Services $services, Exception $exception)
@@ -195,6 +208,9 @@ class Api
 		$router = new Router($cache, new UrlTools());
 
 		try {
+			$prepare = $this->prepare;
+			$prepare($request, $response);
+
 			$this->dispatch($router, $request, $response);
 
 		} catch (\Exception $exception) {
