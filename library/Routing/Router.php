@@ -80,17 +80,15 @@ class Router
 
 		if ($handler) {
 			if (isset($handler[$method])) {
-				$resource = $resources[$handler["_name"]];
-
 				$route->status   = Router::FOUND;
-				$route->handlers = $this->buildHandlers($resource, $handler[$method]);
+				$route->handlers = $this->buildHandlers($handler["_name"], $handler[$method]);
 
 			} else {
 				$route->status  = Router::METHOD_NOT_ALLOWED;
 				$route->allowed = array();
 
 				foreach (array_keys($handler) as $method) {
-					if (strpos($method, "_name") === false) {
+					if ($method !== "_name") {
 						$route->allowed[] = $method;
 					}
 				}
@@ -106,8 +104,8 @@ class Router
 	 */
 	public function getTable(array $resources)
 	{
-		if ($this->cache->has("router")) {
-			return $this->cache->get("router");
+		if (($table = $this->cache->get("router"))) {
+			return $table;
 		}
 
 		$table = array(
@@ -203,9 +201,10 @@ class Router
 	 */
 	public function buildHandlers($resource, array $handlers)
 	{
+		$object = new $resource();
 		$return = array();
 		foreach ($handlers as $handler) {
-			$return[] = array($resource, $handler);
+			$return[] = array($object, $handler);
 		}
 		return $return;
 	}

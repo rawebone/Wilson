@@ -68,7 +68,7 @@ ANNOTATION;
 			array($object, "c")
 		);
 
-		$actual = $this->router->buildHandlers($object, $handlers);
+		$actual = $this->router->buildHandlers("\\stdClass", $handlers);
 
 		$this->assertEquals($expectation, $actual);
 	}
@@ -146,16 +146,12 @@ ANNOTATION;
 			)
 		);
 
-		$actual = $this->router->getTable(array(new TestResource()));
+		$actual = $this->router->getTable(array(__NAMESPACE__ . "\\TestResource"));
 		$this->assertEquals($expectation, $actual);
 	}
 
 	function testGetTableUsesCache()
 	{
-		$this->cache->has("router")
-					->shouldBeCalled()
-					->willReturn(true);
-
 		$this->cache->get("router")
 					->shouldBeCalled()
 					->willReturn("abc");
@@ -176,7 +172,7 @@ ANNOTATION;
 			->willReturn("/this/{is}/dynamic--");
 
 		$resource  = new TestResource();
-		$resources = array("Wilson\\Tests\\Routing\\TestResource" => $resource);
+		$resources = array("Wilson\\Tests\\Routing\\TestResource");
 
 		$match = $this->router->match($resources, "GET", "/this/is/static");
 
@@ -203,7 +199,7 @@ ANNOTATION;
 				 ->willReturn(array());
 
 		$resource  = new TestResource();
-		$resources = array("Wilson\\Tests\\Routing\\TestResource" => $resource);
+		$resources = array("Wilson\\Tests\\Routing\\TestResource");
 
 		$match = $this->router->match($resources, "GET", "/this/1/dynamic--");
 
@@ -229,7 +225,7 @@ ANNOTATION;
 			->willReturn("/this/{is}/dynamic--");
 
 		$resource  = new TestResource();
-		$resources = array("Wilson\\Tests\\Routing\\TestResource" => $resource);
+		$resources = array("Wilson\\Tests\\Routing\\TestResource");
 
 		$match = $this->router->match($resources, "POST", "/this/is/static");
 
