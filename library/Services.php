@@ -22,7 +22,7 @@ use Wilson\Http\Response;
  * This object should be extended with getters in the form of getConnection,
  * and the service can be gotten by calling $service->connection.
  */
-abstract class Services
+class Services
 {
 	/**
 	 * @var Request

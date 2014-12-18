@@ -117,7 +117,7 @@ class Request extends MessageAbstract
      */
     protected $files = array();
 
-    public function __construct(array $server, array $get, array $post,
+    public function initialise(array $server, array $get, array $post,
                                 array $cookies, array $files, $input = "php://input")
     {
 		$this->request = array_merge($get, $post);

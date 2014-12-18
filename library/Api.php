@@ -17,7 +17,6 @@ use Wilson\Http\Response;
 use Wilson\Routing\Router;
 use Wilson\Routing\UrlTools;
 use Wilson\Utils\Cache;
-use Wilson\Utils\Injector;
 
 class Api
 {
@@ -30,25 +29,19 @@ class Api
 
 	/**
 	 * Defines a callable which will be used to handle any errors during dispatch.
+	 * The signature of the callable is:
 	 *
-	 * A service called "exception" is available to this handler.
+	 * function (Request $req, Response $resp, Services $s, Exception $e)
 	 *
 	 * @var callable
 	 */
 	public $error;
 
 	/**
-	 * The Injector is at the core of the Wilson framework and can be used to
-	 * define singletons in your application, allowing you to keep your code
-	 * testable but also fast.
-	 *
-	 * @var Injector
-	 */
-	public $injector;
-
-	/**
 	 * Defines a callable which will be used when a request cannot be matched
-	 * to a route.
+	 * to a route. The signature of the callable is:
+	 *
+	 * function (Request $req, Response $resp, Services $s)
 	 *
 	 * @var callable
 	 */
@@ -62,22 +55,35 @@ class Api
 	public $resources = array();
 
 	/**
-	 * @param Injector $injector
+	 * The Service container is passed to every Controller in your application.
+	 * A default is provided for you without any registered services.
+	 *
+	 * @var Services
 	 */
-	public function __construct(Injector $injector = null)
-	{
-		$this->injector = $injector ?: new Injector();
-		$this->buildInjector();
+	public $services;
 
-		$this->error = function (Response $resp, Exception $exception)
+	/**
+	 * Flags that the application is being unit tested.
+	 *
+	 * @var bool
+	 */
+	public $testing = false;
+
+	public function __construct()
+	{
+		$this->services = new Services();
+
+		$this->error = function (Request $request, Response $response,
+								 Services $services, Exception $exception)
 		{
-			$resp->setStatus(500);
-			$resp->setBody($exception);
+			$response->setStatus(500);
+			$response->setBody($exception);
 		};
 
-		$this->notFound = function (Response $resp)
+		$this->notFound = function (Request $request, Response $response,
+									Services $services)
 		{
-			$resp->setStatus(404);
+			$response->setStatus(404);
 		};
 	}
 
@@ -88,11 +94,8 @@ class Api
 	 */
 	public function createCache()
 	{
-		/** @var Cache $cache */
-		$cache = $this->injector->resolve("_cache");
-
-		/** @var Router $router */
-		$router = $this->injector->resolve("_router");
+		$cache  = new Cache($this->cachePath);
+		$router = new Router($cache, new UrlTools());
 
 		$table = $router->getTable($this->resources);
 		$cache->set("router", $table);
@@ -101,114 +104,91 @@ class Api
 	/**
 	 * Dispatches the request and sends the response.
 	 *
-	 * @param Router $_router
-	 * @param Request $req
-	 * @param Response $resp
+	 * @param Router $router
+	 * @param Request $request
+	 * @param Response $response
 	 * @return void
 	 */
-	public function dispatch(Router $_router, Request $req, Response $resp)
+	public function dispatch(Router $router, Request $request, Response $response)
 	{
-		$match = $_router->match(
-			$this->getResources(),
-			$req->getMethod(),
-			$req->getPathInfo()
+		$match = $router->match(
+			$this->resources,
+			$request->getMethod(),
+			$request->getPathInfo()
 		);
 
 		switch ($match->status) {
-			case Router::NOT_FOUND:
-				$this->injector->inject($this->notFound);
-				break;
-
-			case Router::METHOD_NOT_ALLOWED:
-				$resp->setHeader("Allow", $match->allowed);
-
-				if ($req->getMethod() === "OPTIONS") {
-					$resp->setStatus(200);
-				} else {
-					$resp->setStatus(405);
-
-				}
-				break;
-
 			case Router::FOUND:
-				$req->setParams($match->params);
+				$request->setParams($match->params);
 
 				// Traverse the middleware and handler, aborting if any
 				// of handlers fail.
 				foreach ($match->handlers as $handler) {
-					if ($this->injector->inject($handler) === false) {
+					// PHP5.3 does not like the array($obj, $method)() calling
+					// convention so we have to use the slower call_user_func
+					// method.
+					$result = call_user_func(
+						$handler,
+						$request,
+						$response,
+						$this->services
+					);
+
+					if ($result === false) {
 						return;
 					}
 				}
 				break;
+
+			case Router::NOT_FOUND:
+				$notFound = $this->notFound;
+				$notFound($request, $response, $this->services);
+				break;
+
+			case Router::METHOD_NOT_ALLOWED:
+				$response->setHeader("Allow", $match->allowed);
+
+				if ($request->getMethod() === "OPTIONS") {
+					$response->setStatus(200);
+				} else {
+					$response->setStatus(405);
+
+				}
+				break;
 		}
 
-		$resp->send();
+		if (!$this->testing) {
+			$response->send();
+		}
 	}
 
 	/**
 	 * Calls the dispatcher, directing any errors to the error handler.
 	 *
+	 * @param Request $request
+	 * @param Response $response
 	 * @return void
 	 */
-	public function tryDispatch()
+	public function tryDispatch(Request $request = null, Response $response = null)
 	{
+		if (!$request) {
+			$request = new Request();
+			$request->initialise($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES);
+		}
+
+		if (!$response) {
+			$response = new Response($request);
+		}
+
+		$cache  = new Cache($this->cachePath);
+		$router = new Router($cache, new UrlTools());
+
 		try {
-			$this->injector->inject(array($this, "dispatch"));
+			$this->dispatch($router, $request, $response);
 
 		} catch (\Exception $exception) {
-			$this->injector->instance("exception", $exception);
-			$this->injector->inject($this->error);
+			$error = $this->error;
+			$error($request, $response, $this->services, $exception);
 		}
-	}
-
-	/**
-	 * Defines the basic handling for the framework.
-	 *
-	 * @return void
-	 */
-	protected function buildInjector()
-	{
-		$this->injector->instance("_api", $this);
-		$this->injector->instance("_injector", $this->injector);
-
-		$this->injector->factory("_ut", function ()
-		{
-			return new UrlTools();
-		});
-
-		$this->injector->factory("_cache", function (Api $_api)
-		{
-			return new Cache($_api->cachePath);
-		});
-
-		$this->injector->factory("_router", function ($_cache, $_ut)
-		{
-			return new Router($_cache, $_ut);
-		});
-
-		$this->injector->factory("req", function ()
-		{
-			return new Request($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES);
-		});
-
-		$this->injector->factory("resp", function ($req)
-		{
-			return new Response($req);
-		});
-	}
-
-	/**
-	 * Returns an array of class_name -> object.
-	 *
-	 * @return array
-	 */
-	protected function getResources()
-	{
-		$resources = array();
-		foreach ($this->resources as $resource) {
-			$resources[get_class($resource)] = $resource;
-		}
-		return $resources;
 	}
 }
