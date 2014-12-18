@@ -195,13 +195,13 @@ class Router
 	}
 
 	/**
-	 * @param object $resource
+	 * @param object|string $resource
 	 * @param array $handlers
 	 * @return array
 	 */
 	public function buildHandlers($resource, array $handlers)
 	{
-		$object = new $resource();
+		$object = (is_string($resource) ? new $resource() : $resource);
 		$return = array();
 		foreach ($handlers as $handler) {
 			$return[] = array($object, $handler);
