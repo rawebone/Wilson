@@ -144,160 +144,37 @@ class Response extends MessageAbstract
     }
 
     /**
-     * Finalize
-     *
-     * This prepares this response and returns an array
-     * of [status, headers, body]. This array is passed to outer middleware
-     * if available or directly to the Slim run method.
-     *
-     * @return array[int status, array headers, string body]
+     * @return void
      */
-    public function finalize()
-    {
-        // Prepare response
-        if (in_array($this->status, array(204, 304))) {
-            $this->setHeader("Content-Type", null);
-            $this->setHeader("Content-Length", null);
-            $this->setBody("");
-        }
-
-        return array($this->status, $this->getHeaders(), $this->getBody());
-    }
-
-    /**
-     * This method prepares this response to return an HTTP Redirect response
-     * to the HTTP client.
-     *
-     * @param string $destination
-     * @param int $status
-     */
-    public function redirect($destination, $status = 302)
-    {
-        $this->setStatus($status);
-        $this->setHeader("Location", $destination);
-    }
-
-	/**
-	 * Set Last-Modified HTTP Response Header
-	 *
-	 * Set the HTTP 'Last-Modified' header and stop if a conditional
-	 * GET request's `If-Modified-Since` header matches the last modified time
-	 * of the resource. The `time` argument is a UNIX timestamp integer value.
-	 * When the current request includes an 'If-Modified-Since' header that
-	 * matches the specified last modified time, the application will send a
-     * '304 Not Modified' response to the client.
-	 *
-	 * @param int $time The last modified UNIX timestamp
-	 * @throws \InvalidArgumentException
-	 */
-	public function lastModified($time)
-	{
-        if (!is_integer($time)) {
-            throw new \InvalidArgumentException(__CLASS__ . "::lastModified only accepts an integer UNIX timestamp value.");
-        }
-
-        $this->setHeader("Last-Modified", gmdate("D, d M Y H:i:s T", $time));
-
-        if ($time === strtotime($this->request->getHeader("If-Modified-Since"))) {
-            $this->setStatus(304);
-        }
-	}
-
-	/**
-	 * Set the etag header and stop if the conditional GET request matches.
-	 * The `value` argument is a unique identifier for the current resource.
-	 * The `type` argument indicates whether the etag should be used as a strong or
-	 * weak cache validator.
-	 *
-	 * When the current request includes an 'If-None-Match' header with
-	 * a matching etag, execution is immediately stopped. If the request
-	 * method is GET or HEAD, a '304 Not Modified' response is sent.
-	 *
-	 * @param string $value The etag value
-	 * @param string $type The type of etag to create; either "strong" or "weak"
-	 * @throws \InvalidArgumentException If provided type is invalid
-	 */
-	public function etag($value, $type = "strong")
-	{
-		// Ensure type is correct
-		if (!in_array($type, array("strong", "weak"))) {
-			throw new \InvalidArgumentException("Invalid Slim::etag type. Expected \"strong\" or \"weak\".");
-		}
-
-		// Set etag value
-		$value = '"' . $value . '"';
-		if ($type === 'weak') {
-			$value = 'W/'.$value;
-		}
-		$this['ETag'] = $value;
-
-		// Check conditional GET
-		if (($etagsHeader = $this->request->getHeader("If-None-Match"))) {
-			$etags = preg_split('@\s*,\s*@', $etagsHeader);
-			if (in_array($value, $etags) || in_array('*', $etags)) {
-				$this->halt(304);
-			}
-		}
-	}
-
-	/**
-	 * Set Expires HTTP response header
-	 *
-	 * The `Expires` header tells the HTTP client the time at which
-	 * the current resource should be considered stale. At that time the HTTP
-	 * client will send a conditional GET request to the server; the server
-	 * may return a 200 OK if the resource has changed, else a 304 Not Modified
-	 * if the resource has not changed. The `Expires` header should be used in
-	 * conjunction with the `etag()` or `lastModified()` methods above.
-	 *
-	 * @param string|int    $time   If string, a time to be parsed by `strtotime()`;
-	 *                              If int, a UNIX timestamp;
-	 */
-	public function expires($time)
-	{
-		if (is_string($time)) {
-			$time = strtotime($time);
-		}
-		$this->setHeader("Expires", gmdate("D, d M Y H:i:s T", $time));
-	}
-
     public function send()
     {
-        $this->sendHeaders();
-        $this->sendContent();
-    }
+        $send = ($this->request->getMethod() !== "HEAD"
+                 && !($this->status === 204 || $this->status === 304));
 
-    public function sendHeaders()
-    {
+        if ($send) {
+            $body = $this->getBody();
+            $this->setHeader("Content-Length", strlen($body));
+        }
+
         if (headers_sent() === false) {
             // Send status
             $format = (strpos(PHP_SAPI, "cgi") === 0 ? "Status: %s" : "HTTP/1.1 %s");
             header(sprintf($format, static::getMessageForCode($this->getStatus())));
 
             // Send headers
-            foreach ($this->getHeaders() as $name => $all) {
-
-                $individual = explode("\n", $all);
-                foreach ($individual as $value) {
-                    header("$name: $value", false);
-                }
+            foreach ($this->getHeaders() as $name => $value) {
+                header("$name: $value");
             }
         }
-    }
 
-    public function sendContent()
-    {
-        $isHead = ($this->request->getMethod() !== "HEAD");
-        $noContent = in_array($this->status, array(204, 304));
-
-        if (!$isHead && !$noContent) {
-            echo $this->getBody();
+        if ($send) {
+            echo $body;
         }
     }
 
     /**
      * Get message for HTTP status code
-     * @param  int         $status
+     * @param int $status
      * @return string|null
      */
     public static function getMessageForCode($status)

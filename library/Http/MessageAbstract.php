@@ -56,11 +56,6 @@ abstract class MessageAbstract
     private $headers = array();
 
     /**
-     * @var int
-     */
-    private $length = 0;
-
-    /**
      * @return array
      */
     public function getHeaders()
@@ -107,11 +102,15 @@ abstract class MessageAbstract
      */
     public function setHeader($name, $value)
     {
-        if (is_null($value)) {
-            unset($this->headers[$name]);
-        } else {
-            $this->headers[$name] = $value;
-        }
+        $this->headers[$name] = $value;
+    }
+
+    /**
+     * @param string $name
+     */
+    public function unsetHeader($name)
+    {
+        unset($this->headers[$name]);
     }
 
     /**
@@ -124,24 +123,10 @@ abstract class MessageAbstract
 
     /**
      * @param string $content
-     * @param boolean $replace
      * @return void
      */
-    public function setBody($content, $replace = true)
+    public function setBody($content)
     {
-        if ($replace) {
-            $this->body = $content;
-        } else {
-            $this->body .= (string)$content;
-        }
-        $this->length = strlen($this->body);
-    }
-
-    /**
-     * @return int
-     */
-    public function getLength()
-    {
-        return $this->length;
+        $this->body = $content;
     }
 }

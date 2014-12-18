@@ -158,34 +158,12 @@ class Request extends MessageAbstract
         }
         $this->content = $content;
 
-        // Process Headers into real form (HTTP_CONTENT_TYPE => Content-Type)
-        foreach ($server as $key => $value) {
-            if (strpos($key, "HTTP_COOKIE") === 0) {
-                // Cookies are handled using the $cookie parameter
-                continue;
-            }
-
-            if ($value && strpos($key, "HTTP_") === 0) {
-                $name = strtr(substr($key, 5), '_', ' ');
-                $name = strtr(ucwords(strtolower($name)), ' ', '-');
-
-                $this->setHeader($name, $value);
-                continue;
-            }
-
-            if ($value && strpos($key, "CONTENT_") === 0) {
-                $name = substr($key, 8); // Content-
-                $name = "Content-" . (($name == "MD5") ? $name : ucfirst(strtolower($name)));
-
-                $this->setHeader($name, $value);
-                continue;
-            }
-        }
+        $this->setHeaders($server);
 
         // Method Override
-        if ($this->hasHeader("X-Http-Method-Override")) {
+        if ($this->hasHeader("HTTP_X_HTTP_METHOD_OVERRIDE")) {
             $this->originalMethod = $this->method;
-            $this->method = strtoupper($this->getHeader("X-Http-Method-Override"));
+            $this->method = strtoupper($this->getHeader("HTTP_X_HTTP_METHOD_OVERRIDE"));
         }
     }
 
@@ -216,11 +194,27 @@ class Request extends MessageAbstract
     }
 
     /**
+     * @return string|null
+     */
+    public function getUsername()
+    {
+        return $this->getHeader("PHP_AUTH_USER");
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getPassword()
+    {
+        return $this->getHeader("PHP_AUTH_PW");
+    }
+
+    /**
      * @return bool
      */
     public function isAjax()
     {
-        return $this->getHeader("X-Requested-With", "") === "XMLHttpRequest";
+        return $this->getHeader("HTTP_X_REQUESTED_WITH", "") === "XMLHttpRequest";
     }
 
 	/**
@@ -245,12 +239,17 @@ class Request extends MessageAbstract
 	 */
 	public function setParam($key, $value)
 	{
-		if (is_null($value)) {
-			unset($this->request[$key]);
-		} else {
-			$this->request[$key] = $value;
-		}
+		$this->request[$key] = $value;
 	}
+
+    /**
+     * @param string $key
+     * @return void
+     */
+    public function unsetParam($key)
+    {
+        unset($this->request[$key]);
+    }
 
 	/**
 	 * @return array
@@ -298,7 +297,7 @@ class Request extends MessageAbstract
      */
     public function getContentType()
     {
-        return $this->getHeader("Content-Type");
+        return $this->getHeader("HTTP_CONTENT_TYPE");
     }
 
     /**
@@ -354,7 +353,7 @@ class Request extends MessageAbstract
      */
     public function getContentLength()
     {
-        return $this->getHeader("Content-Length", 0);
+        return $this->getHeader("HTTP_CONTENT_LENGTH", 0);
     }
 
     /**
@@ -362,8 +361,8 @@ class Request extends MessageAbstract
      */
     public function getHost()
     {
-        if ($this->hasHeader("Host")) {
-            $host = $this->getHeader("Host");
+        if ($this->hasHeader("HTTP_HOST")) {
+            $host = $this->getHeader("HTTP_HOST");
             if (strpos($host, ":") !== false) {
                 $hostParts = explode(":", $host);
                 $host = $hostParts[0];
@@ -443,11 +442,11 @@ class Request extends MessageAbstract
      */
     public function getIp()
     {
-        if ($this->hasHeader("X-Forwarded-For")) {
-            return $this->getHeader("X-Forwarded-For");
+        if ($this->hasHeader("HTTP_X_FORWARDED_FOR")) {
+            return $this->getHeader("HTTP_X_FORWARDED_FOR");
 
-        } else if ($this->hasHeader("Client-Ip")) {
-            return $this->getHeader("Client-Ip");
+        } else if ($this->hasHeader("HTTP_CLIENT_IP")) {
+            return $this->getHeader("HTTP_CLIENT_IP");
 
         } else {
             return $this->ip;

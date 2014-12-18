@@ -31,7 +31,9 @@ class Api
 	 * Defines a callable which will be used to handle any errors during dispatch.
 	 * The signature of the callable is:
 	 *
-	 * function (Request $req, Response $resp, Services $s, Exception $e)
+	 * <code>
+	 * function (Request $req, Response $resp, Services $s, Exception $e) {}
+	 * </code>
 	 *
 	 * @var callable
 	 */
@@ -41,16 +43,25 @@ class Api
 	 * Defines a callable which will be used when a request cannot be matched
 	 * to a route. The signature of the callable is:
 	 *
-	 * function (Request $req, Response $resp, Services $s)
+	 * <code>
+	 * function (Request $req, Response $resp, Services $s) {}
+	 * </code>
 	 *
 	 * @var callable
 	 */
 	public $notFound;
 
 	/**
-	 * Holds all of the objects that define your API.
+	 * Holds all of the objects that define your API. These should be defined as:
 	 *
-	 * @var object[]
+	 * <code>
+	 * $api->resources = array(
+	 *     "My\Restful\ResourceA",
+	 * 	   "My\Restful\ResourceB"
+	 * ):
+	 * </code>
+	 *
+	 * @var string[]
 	 */
 	public $resources = array();
 
