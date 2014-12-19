@@ -121,7 +121,7 @@ class Api
 		$cache  = new Cache($this->cachePath);
 		$router = new Router($cache, new UrlTools());
 
-		$table = $router->getTable($this->resources);
+		$table = $router->getRoutingTable($this->resources);
 		$cache->set("router", $table);
 	}
 

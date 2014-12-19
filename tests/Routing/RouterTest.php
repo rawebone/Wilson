@@ -99,7 +99,7 @@ ANNOTATION;
 		$router = new Router($this->cache->reveal(), new UrlTools());
 		$expectation = TestResource::expectedTable();
 
-		$this->assertEquals($expectation, $router->buildTable(new TestResource()));
+		$this->assertEquals($expectation, $router->buildRoutingTableEntryForResource(new TestResource()));
 	}
 
 	function testGetTable()
@@ -107,7 +107,7 @@ ANNOTATION;
 		$router = new Router($this->cache->reveal(), new UrlTools());
 		$expectation = TestResource::expectedTable();
 
-		$actual = $router->getTable(array(__NAMESPACE__ . "\\TestResource"));
+		$actual = $router->getRoutingTable(array(__NAMESPACE__ . "\\TestResource"));
 		$this->assertEquals($expectation, $actual);
 	}
 
@@ -117,7 +117,7 @@ ANNOTATION;
 					->shouldBeCalled()
 					->willReturn("abc");
 
-		$table = $this->router->getTable(array(new TestResource()));
+		$table = $this->router->getRoutingTable(array(new TestResource()));
 		$this->assertEquals("abc", $table);
 	}
 

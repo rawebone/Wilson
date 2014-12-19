@@ -23,8 +23,19 @@ use Wilson\Utils\Cache;
  */
 class Router
 {
+	/**
+	 * @route HTTP_METHOD URI
+	 */
 	const ROUTE_REGEX = "/@route ([A-Z]+) ([^\r\n]+)/";
+
+	/**
+	 * @where PARAMETER REGEX
+	 */
 	const CONDITION_REGEX = "/@where ([\\w]+) ([^\r\n]+)/";
+
+	/**
+	 * @through METHOD_NAME
+	 */
 	const THROUGH_REGEX = "/@through ([\\w\\_]+)/";
 
 	const FOUND = 1;
@@ -52,7 +63,17 @@ class Router
 	}
 
 	/**
-	 * @param array $resources
+	 * Matches a request against the resources currently available.
+	 * The object returned is in the format of:
+	 *
+	 * stdClass {
+	 *     $status;   // Router::FOUND, Router::NOT_FOUND, Router::METHOD_NOT_ALLOWED
+	 *     $allowed;  // An array of allowed HTTP methods (when METHOD_NOT_ALLOWED)
+	 *     $handlers; // A callable[] that should be dispatched (when FOUND)
+	 *     $params;   // An array of parameters matched from the URI (when FOUND)
+	 * }
+	 *
+	 * @param string[] $resources
 	 * @param string $method
 	 * @param string $uri
 	 * @return object
@@ -62,19 +83,20 @@ class Router
 		$route = new \stdClass();
 		$route->status = Router::NOT_FOUND;
 
-		$handler = null;
-		$table   = $this->getTable($resources);
+		$handler    = null;
+		$urlTools   = $this->urlTools;
+		$terminated = $urlTools->terminate($uri);
+		$table      = $this->getRoutingTable($resources);
 
-		$terminated = $this->urlTools->terminate($uri);
-
+		// Find the correct handler
 		if (isset($table["static"][$terminated])) {
 			$handler = $table["static"][$terminated];
 
 		} else {
 			foreach ($table["dynamic"] as $expr => $handlers) {
-				if ($this->urlTools->match($expr, $uri)) {
+				if ($urlTools->match($expr, $uri)) {
 					$handler = $handlers;
-					$route->params = $this->urlTools->parameters($expr, $uri);
+					$route->params = $urlTools->parameters($expr, $uri);
 					break;
 				}
 			}
@@ -82,18 +104,16 @@ class Router
 
 		if ($handler) {
 			if (isset($handler[$method])) {
+				// Create a new instance of the resource object and set handlers
+				// to be an array of object method callables.
 				$route->status   = Router::FOUND;
 				$route->handlers = $this->buildHandlers($handler["_name"], $handler[$method]);
 
 			} else {
+				// Provide accurate information to the User Agent about what
+				// HTTP methods are supported by the route.
 				$route->status  = Router::METHOD_NOT_ALLOWED;
-				$route->allowed = array();
-
-				foreach (array_keys($handler) as $method) {
-					if ($method !== "_name") {
-						$route->allowed[] = $method;
-					}
-				}
+				$route->allowed = array_keys(array_slice($handler, 1));
 			}
 		}
 
@@ -101,10 +121,17 @@ class Router
 	}
 
 	/**
+	 * Returns an array containing the compiled routing information based off of
+	 * the provided resource objects.
+	 *
+	 * !!! WARNING !!! This will use the cached version of the table if available
+	 * without checking for updates. It is the end users job to ensure that this
+	 * cache file is kept updated.
+	 *
 	 * @param array $resources
 	 * @return array
 	 */
-	public function getTable(array $resources)
+	public function getRoutingTable(array $resources)
 	{
 		if (($table = $this->cache->get("router"))) {
 			return $table;
@@ -115,8 +142,8 @@ class Router
 			"dynamic" => array()
 		);
 
-		foreach ($resources as $resource) {
-			$routes = $this->buildTable($resource);
+		foreach ($resources as $resourceName) {
+			$routes = $this->buildRoutingTableEntryForResource($resourceName);
 
 			$table["static"]  += $routes["static"];
 			$table["dynamic"] += $routes["dynamic"];
@@ -125,16 +152,20 @@ class Router
 	}
 
 	/**
-	 * @param $resource
+	 * Compiles an array of routing information based off of a resource object.
+	 *
+	 * @param string $resourceName
 	 * @return array
 	 */
-	public function buildTable($resource)
+	public function buildRoutingTableEntryForResource($resourceName)
 	{
 		$table = array(
 			"static"  => array(),
 			"dynamic" => array()
 		);
-		$reflection = new ReflectionClass($resource);
+
+		$urlTools   = $this->urlTools;
+		$reflection = new ReflectionClass($resourceName);
 
 		foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
 			/** @var ReflectionMethod $method */
@@ -144,20 +175,24 @@ class Router
 				continue;
 			}
 
-			$notation = $this->parseAnnotations($comment);
-			$compiled = $this->urlTools->compile($notation->uri, $notation->conditions);
-			$terminated = $this->urlTools->terminate($notation->uri);
+			$metaData   = $this->parseAnnotations($comment);
+			$compiled   = $urlTools->compile($metaData->uri, $metaData->conditions);
+			$terminated = $urlTools->terminate($metaData->uri);
 
+			// If a route does not have any regex we can optimise its dispatch
 			$type = ($compiled ===  $terminated ? "static" : "dynamic");
 
+			// Only create table entries where necessary to avoid bloating
+			// the table.
 			if (!isset($table[$type][$compiled])) {
 				$table[$type][$compiled] = array();
 				$table[$type][$compiled]["_name"] = $reflection->getName();
 			}
 
-			$notation->middleware[] = $method->name;
+			// Ensure that the method will be invoked after all other middleware
+			$metaData->middleware[] = $method->name;
 
-			$table[$type][$compiled][$notation->method] = $notation->middleware;
+			$table[$type][$compiled][$metaData->method] = $metaData->middleware;
 		}
 
 		return $table;
@@ -179,17 +214,20 @@ class Router
 			"middleware" => array()
 		);
 
+		// Handle the route @route METHOD URI
 		if (preg_match(Router::ROUTE_REGEX, $comment, $matches)) {
 			$annotations["method"] = $matches[1];
 			$annotations["uri"] = $matches[2];
 		}
 
+		// Handle route conditions @where PARAMETER REGEX
 		if (preg_match_all(Router::CONDITION_REGEX, $comment, $matches)) {
 			for ($i = 0, $len = count($matches[1]); $i < $len; $i++) {
 				$annotations["conditions"][$matches[1][$i]] = $matches[2][$i];
 			}
 		}
 
+		// Handle middleware @through METHOD_NAME
 		if (preg_match_all(Router::THROUGH_REGEX, $comment, $matches)) {
 			$annotations["middleware"] = $matches[1];
 		}
@@ -198,14 +236,24 @@ class Router
 	}
 
 	/**
-	 * @param object|string $resource
+	 * Returns an array of object method callables in the format of:
+	 * array(array($resource, $handler)). An instance of type
+	 * $resourceName will be created.
+	 *
+	 * !!! WARNING !!! This method has no idea what parameters are
+	 * required for construction of the resource and so assumes none.
+	 * This can lead to runtime issues that the framework cannot
+	 * prevent, so ensure your resources are defined as stateless.
+	 *
+	 * @param string $resourceName
 	 * @param array $handlers
-	 * @return array
+	 * @return callable[]
 	 */
-	public function buildHandlers($resource, array $handlers)
+	public function buildHandlers($resourceName, array $handlers)
 	{
-		$object = (is_string($resource) ? new $resource() : $resource);
 		$return = array();
+		$object = new $resourceName();
+
 		foreach ($handlers as $handler) {
 			$return[] = array($object, $handler);
 		}
