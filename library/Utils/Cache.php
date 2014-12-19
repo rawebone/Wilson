@@ -12,61 +12,73 @@
 namespace Wilson\Utils;
 
 /**
- * Cache is a sub-optimal way of caching data to disk, however it makes
- * the best sense for the framework as it requires no dependencies.
+ * Cache provides an array file cache mechanism. This is sub-optimal for heavy
+ * usage as it incurs a Disk IO + PHP parse hit, however this is currently
+ * better than building the routing table from fresh.
  */
 class Cache
 {
     /**
+     * Allows us to check whether we should save to disk.
+     *
      * @var bool
      */
     protected $amended = false;
 
     /**
+     * The file that we are going to store to.
+     *
      * @var string
      */
     protected $file;
 
     /**
+     * The current state of the cache.
+     *
      * @var array
      */
     protected $state = array();
 
+    /**
+     * Creates a new instance of the cache object, loading from the provided
+     * cache file if $file is a path and the path exists.
+     *
+     * @param string|null $file
+     */
     public function __construct($file)
     {
         $this->file = $file;
 
-        $this->load();
+        if ($this->file && is_file($this->file)) {
+            $this->state = include $this->file;
+        }
     }
 
+    /**
+     * Saves the state of the cache to disk before the application terminates,
+     * if the state has changed.
+     */
     public function __destruct()
     {
-        $this->store();
+        if ($this->file && $this->amended) {
+            file_put_contents($this->file, "<?php return " . var_export($this->state, true) . ";");
+        }
     }
 
     /**
-     * @param string $key
-     * @return boolean
-     */
-    public function has($key)
-    {
-        return isset($this->state[$key]);
-    }
-
-    /**
+     * Returns a cached value if available, or null.
+     *
      * @param string $key
      * @return mixed|null
      */
     public function get($key)
     {
-        if ($this->has($key)) {
-            return $this->state[$key];
-        }
-
-        return null;
+        return (isset($this->state[$key]) ? $this->state[$key] : null);
     }
 
     /**
+     * Caches a value.
+     *
      * @param string $key
      * @param mixed $value
      * @return void
@@ -75,19 +87,5 @@ class Cache
     {
         $this->amended = true;
         $this->state[$key] = $value;
-    }
-
-    protected function load()
-    {
-        if ($this->file && is_file($this->file)) {
-            $this->state = include $this->file;
-        }
-    }
-
-    protected function store()
-    {
-		if ($this->file && $this->amended) {
-        	file_put_contents($this->file, "<?php return " . var_export($this->state, true) . ";");
-		}
     }
 }
