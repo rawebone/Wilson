@@ -103,7 +103,9 @@ class Router
 		}
 
 		if ($handler) {
-			if (isset($handler[$method])) {
+			// GET and HEAD are treated the same by the router and the output is
+			// handled by the framework further on in the dispatch process
+			if (isset($handler[$method]) || $method === "HEAD" && isset($handler["GET"])) {
 				// Create a new instance of the resource object and set handlers
 				// to be an array of object method callables.
 				$route->status   = Router::FOUND;

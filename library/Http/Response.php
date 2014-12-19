@@ -49,14 +49,14 @@ namespace Wilson\Http;
 class Response extends MessageAbstract
 {
     /**
+     * @var string
+     */
+    protected $protocol = "HTTP/1.1";
+
+    /**
      * @var int HTTP status code
      */
     protected $status = 200;
-
-    /**
-     * @var Request
-     */
-    protected $request;
 
     /**
      * @var array HTTP response codes and messages
@@ -118,16 +118,6 @@ class Response extends MessageAbstract
     );
 
     /**
-     * @param string $body
-     * @param int $status
-     * @param array $headers
-     */
-    public function __construct(Request $request)
-    {
-        $this->request = $request;
-    }
-
-    /**
      * @return int
      */
     public function getStatus()
@@ -137,10 +127,181 @@ class Response extends MessageAbstract
 
     /**
      * @param int $status
+     * @throws \InvalidArgumentException
      */
     public function setStatus($status)
     {
         $this->status = (int)$status;
+
+        if ($this->status < 100 || $this->status > 600) {
+            throw new \InvalidArgumentException("HTTP Status $this->status is invalid!");
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    public function isOk()
+    {
+        return $this->status === 200;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isInformational()
+    {
+        return $this->status >= 100 && $this->status < 200;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSuccess()
+    {
+        return $this->status >= 200 && $this->status < 300;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isRedirection()
+    {
+        return $this->status >= 300 && $this->status < 400;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isClientError()
+    {
+        return $this->status >= 400 && $this->status < 500;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isServerError()
+    {
+        return $this->status >= 500 && $this->status < 600;
+    }
+
+    /**
+     * @param \DateTime $date
+     * @return void
+     */
+    public function setLastModified(\DateTime $date = null)
+    {
+        if ($date === null) {
+            $this->unsetHeader("Last-Modified");
+
+        } else {
+            $date = clone $date;
+            $date->setTimezone(new \DateTimeZone("UTC"));
+            $this->setHeaders("Last-Modified", $date->format("D, d M Y H:i:s") ." GMT");
+        }
+    }
+
+    /**
+     * @param string|null $value
+     * @param bool $weak
+     * @return void
+     */
+    public function setETag($value = null, $weak = false)
+    {
+        if ($value === null) {
+            $this->unsetHeader("ETag");
+
+        } else {
+            $tag = ($weak ? "W/" : "") . "\"$value\"";
+            $this->setHeader("ETag", $tag);
+        }
+    }
+
+    /**
+     * Determines if the requested resource has been modified since the
+     * last request, allowing us to optimise the response. This is based
+     * off of Symfony\Component\HttpFoundation\Response::isNotModified().
+     *
+     * @param Request $request
+     */
+    public function checkForModifications(Request $request)
+    {
+        if (!$request->isSafeMethod()) {
+            return;
+        }
+
+        $notModified   = false;
+        $lastModified  = $this->getHeader("Last-Modified");
+        $modifiedSince = $request->getModifiedSince();
+
+        if (($eTags = $request->getETags())) {
+            $notModified = in_array($this->getHeader("ETag"), $eTags) || in_array("*", $eTags);
+        }
+
+        if ($modifiedSince && $lastModified) {
+            $notModified = strtotime($modifiedSince) >= strtotime($lastModified) && (!$eTags || $notModified);
+        }
+
+        if ($notModified) {
+            $this->setStatus(304);
+
+            // These headers are not allowed to be included with a 304 response
+            $headers = array(
+                "Allow",
+                "Content-Encoding",
+                "Content-Language",
+                "Content-Length",
+                "Content-MD5",
+                "Content-Type",
+                "Last-Modified"
+            );
+
+            foreach ($headers as $header) {
+                $this->unsetHeader($header);
+            }
+        }
+    }
+
+    /**
+     * Prepares the response for being sent back to the client.
+     * This is based off Symfony's HttpFoundation Response::prepare()
+     * method and Slim's Response sending.
+     *
+     * @param Request $request
+     * @return void
+     */
+    public function prepare(Request $request)
+    {
+        $this->checkForModifications($request);
+
+        // Fix output content
+        if ($this->isInformational() || $this->status === 204 || $this->status === 304) {
+            $this->setBody("");
+            $this->unsetHeader("Content-Type");
+            $this->unsetHeader("Content-Length");
+
+        } else {
+            $body = $this->getBody();
+            if (is_string($body)) {
+                $this->setHeader("Content-Length", strlen($body));
+            }
+
+            if ($request->getMethod() === "HEAD") {
+                $this->setBody("");
+            }
+        }
+
+        // Match request protocol
+        if ($this->protocol !== $request->getProtocol()) {
+            $this->protocol = $request->getProtocol();
+        }
+
+        // On the older HTTP protocol we need to send more cache headers
+        if ($this->protocol === "HTTP/1.0" && $this->getHeader("Cache-Control") === "no-cache") {
+            $this->setHeader("Pragma", "no-cache");
+            $this->setHeader("Expires", -1);
+        }
     }
 
     /**
@@ -148,17 +309,9 @@ class Response extends MessageAbstract
      */
     public function send()
     {
-        $send = ($this->request->getMethod() !== "HEAD"
-                 && !($this->status === 204 || $this->status === 304));
-
-        if ($send) {
-            $body = $this->getBody();
-            $this->setHeader("Content-Length", strlen($body));
-        }
-
         if (headers_sent() === false) {
             // Send status
-            $format = (strpos(PHP_SAPI, "cgi") === 0 ? "Status: %s" : "HTTP/1.1 %s");
+            $format = (strpos(PHP_SAPI, "cgi") === 0 ? "Status: %s" : "$this->protocol %s");
             header(sprintf($format, static::getMessageForCode($this->getStatus())));
 
             // Send headers
@@ -167,7 +320,11 @@ class Response extends MessageAbstract
             }
         }
 
-        if ($send) {
+        $body = $this->getBody();
+        if ($body instanceof \Closure) {
+            call_user_func($body);
+
+        } else {
             echo $body;
         }
     }

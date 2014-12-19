@@ -207,7 +207,7 @@ class Api
 		}
 
 		if (!$response) {
-			$response = new Response($request);
+			$response = new Response();
 		}
 
 		$cache  = new Cache($this->cacheFile);
@@ -223,6 +223,7 @@ class Api
 		}
 
 		if (!$this->testing) {
+			$response->prepare($request);
 			$response->send();
 		}
 	}

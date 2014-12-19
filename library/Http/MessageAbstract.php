@@ -1,5 +1,14 @@
 <?php
 
+/*
+ * This file is part of the Wilson web framework.
+ *
+ * (c) Nick Rawe <rawebone@gmail.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Wilson\Http;
 
 /**
@@ -46,7 +55,7 @@ namespace Wilson\Http;
 abstract class MessageAbstract
 {
     /**
-     * @var string
+     * @var string|\Closure
      */
     private $body = "";
 
@@ -114,7 +123,7 @@ abstract class MessageAbstract
     }
 
     /**
-     * @return string
+     * @return string|\Closure
      */
     public function getBody()
     {
@@ -122,7 +131,7 @@ abstract class MessageAbstract
     }
 
     /**
-     * @param string $content
+     * @param string|\Closure $content
      * @return void
      */
     public function setBody($content)

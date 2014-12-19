@@ -96,7 +96,12 @@ class Request extends MessageAbstract
     /**
      * @var string
      */
-    protected $protocol;
+    protected $scheme;
+
+    /**
+     * @var string
+     */
+    protected $serverProtocol;
 
     /**
      * @var string
@@ -127,6 +132,7 @@ class Request extends MessageAbstract
         $this->ip = $server["REMOTE_ADDR"];
         $this->serverName = $server["SERVER_NAME"];
         $this->serverPort = $server["SERVER_PORT"];
+        $this->serverProtocol = $server["SERVER_PROTOCOL"];
 
         // Server params
         $scriptName  = $server["SCRIPT_NAME"]; // <-- "/foo/index.php"
@@ -149,7 +155,7 @@ class Request extends MessageAbstract
         // Query string (without leading "?")
         $this->queryString = $queryString;
 
-        $this->protocol = empty($server["HTTPS"]) || $server["HTTPS"] === "off" ? "http" : "https";
+        $this->scheme = empty($server["HTTPS"]) || $server["HTTPS"] === "off" ? "http" : "https";
 
         // Input stream (readable one time only; not available for multipart/form-data requests)
         $content = @file_get_contents($input);
@@ -215,6 +221,39 @@ class Request extends MessageAbstract
     public function isAjax()
     {
         return $this->getHeader("HTTP_X_REQUESTED_WITH", "") === "XMLHttpRequest";
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSecure()
+    {
+        return $this->getProtocol() === "https";
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSafeMethod()
+    {
+        return $this->method === "HEAD" || $this->method === "GET";
+    }
+
+    /**
+     * @param string $expr
+     * @return bool
+     */
+    public function isUserAgentLike($expr)
+    {
+        return preg_match("/$expr/i", $this->getUserAgent()) === 1;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUserAgent()
+    {
+        return $this->getHeader("HTTP_USER_AGENT", "");
     }
 
 	/**
@@ -293,6 +332,25 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns an array of ETags sent with the Request.
+     *
+     * @see Symfony\Component\HttpFoundation\Request::getETags
+     * @return array
+     */
+    public function getETags()
+    {
+        return preg_split('/\s*,\s*/', $this->getHeader("HTTP_IF_NONE_MATCH"), null, PREG_SPLIT_NO_EMPTY);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getModifiedSince()
+    {
+        return $this->getHeader("HTTP_IF_MODIFIED_SINCE");
+    }
+
+    /**
      * @return string|null
      */
     public function getContentType()
@@ -359,6 +417,14 @@ class Request extends MessageAbstract
     /**
      * @return string
      */
+    public function getProtocol()
+    {
+        return $this->serverProtocol;
+    }
+
+    /**
+     * @return string
+     */
     public function getHost()
     {
         if ($this->hasHeader("HTTP_HOST")) {
@@ -393,9 +459,9 @@ class Request extends MessageAbstract
     /**
      * @return string
      */
-    public function getProtocol()
+    public function getScheme()
     {
-        return $this->protocol;
+        return $this->scheme;
     }
 
     /**
@@ -429,8 +495,8 @@ class Request extends MessageAbstract
      */
     public function getUrl()
     {
-        $url = $this->getProtocol() . "://" . $this->getHost();
-        if (($this->getProtocol() === "https" && $this->getPort() !== 443) || ($this->getProtocol() === "http" && $this->getPort() !== 80)) {
+        $url = $this->getScheme() . "://" . $this->getHost();
+        if (($this->getScheme() === "https" && $this->getPort() !== 443) || ($this->getScheme() === "http" && $this->getPort() !== 80)) {
             $url .= sprintf(":%s", $this->getPort());
         }
 
