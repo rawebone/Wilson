@@ -42,6 +42,8 @@ class Services
 	/**
 	 * Sets the request and the response which can be used by other objects.
 	 *
+	 * !!! WARNING !!! calling this method also clears the instance cache.
+	 *
 	 * @param Request $request
 	 * @param Response $response
 	 */
