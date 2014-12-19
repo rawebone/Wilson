@@ -18,6 +18,8 @@ is good performance and:
 
 ## Usage
 
+At a glance, an application in the framework looks like this:
+
 ```php
 <?php
 
@@ -25,7 +27,7 @@ require_once "/path/to/vendor/autoload.php";
 
 $api = new Wilson\Api();
 $api->resources = array( "My\Restful\ResourceA" );
-$api->tryDispatch();
+$api->dispatch();
 
 ```
 
@@ -38,18 +40,25 @@ use Wilson\Services;
 use Wilson\Http\Request;
 use Wilson\Http\Response;
 
-class Resource
+class ResourceA
 {
     /**
      * @route GET /resource-a/
      */
-    function collection(Request $request, Response $response, Services $services)
+    function getCollection(Request $request, Response $response, Services $services)
     {
-    
+        $data = array("a", "b", "c");
+        
+        $response->setStatus(200);
+        $response->setHeader("Content-Type", "application/json");
+        $response->setBody(json_encode($data));
     }
 }
 
 ```
+
+Look at the [docs](docs/index.md) for a proper guide through the functionality.
+
 
 ## TODO
 
