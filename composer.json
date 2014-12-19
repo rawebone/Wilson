@@ -2,8 +2,6 @@
     "name": "rawebone/wilson",
     "description": "A Resource Orientated Framework for designing RESTful APIs",
     "keywords": [ "REST", "routing", "testable" ],
-    "minimum-stability": "dev",
-    "prefer-stable": true,
     "license": "MIT",
     "authors": [
         {
