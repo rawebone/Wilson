@@ -21,11 +21,12 @@ use Wilson\Utils\Cache;
 class Api
 {
 	/**
-	 * Defines the path where we can cache framework data.
+	 * Defines the file we should use to cache framework data.
 	 *
+	 * @see createCache
 	 * @var string
 	 */
-	public $cachePath;
+	public $cacheFile;
 
 	/**
 	 * Defines a callable which will be used to handle any errors during dispatch.
@@ -35,6 +36,7 @@ class Api
 	 * function (Request $req, Response $resp, Services $s, Exception $e) {}
 	 * </code>
 	 *
+	 * @see defaultError
 	 * @var callable
 	 */
 	public $error;
@@ -47,6 +49,7 @@ class Api
 	 * function (Request $req, Response $resp, Services $s) {}
 	 * </code>
 	 *
+	 * @see defaultNotFound
 	 * @var callable
 	 */
 	public $notFound;
@@ -59,12 +62,16 @@ class Api
 	 * function (Request $request, Response $response) {}
 	 * </code>
 	 *
+	 * Exceptions thrown by this handler will trigger the error handler.
+	 *
+	 * @see error
 	 * @var callable
 	 */
 	public $prepare;
 
 	/**
-	 * Holds all of the objects that define your API. These should be defined as:
+	 * Holds all of the object names that define your API. These should be
+	 * defined as:
 	 *
 	 * <code>
 	 * $api->resources = array(
@@ -73,6 +80,14 @@ class Api
 	 * ):
 	 * </code>
 	 *
+	 * When the framework matches a request an instance of the object will be
+	 * created automatically to fulfill the dispatch; this allows us to put off
+	 * creating objects until absolutely necessary. However this does mean that
+	 * the resource objects constructors cannot have any non-defaulted parameters.
+	 * If your object has dependencies you should define them in a Service
+	 * container.
+	 *
+	 * @see services
 	 * @var string[]
 	 */
 	public $resources = array();
@@ -81,12 +96,14 @@ class Api
 	 * The Service container is passed to every Controller in your application.
 	 * A default is provided for you without any registered services.
 	 *
+	 * @see Services
 	 * @var Services
 	 */
 	public $services;
 
 	/**
-	 * Flags that the application is being unit tested.
+	 * Flags that the application is being unit tested. This prevents the Api
+	 * from sending responses back to the User Agent.
 	 *
 	 * @var bool
 	 */
@@ -96,29 +113,22 @@ class Api
 	{
 		$this->services = new Services();
 		$this->prepare  = function () { };
-
-		$this->error = function (Request $request, Response $response,
-								 Services $services, Exception $exception)
-		{
-			$response->setStatus(500);
-			$response->setBody($exception);
-		};
-
-		$this->notFound = function (Request $request, Response $response,
-									Services $services)
-		{
-			$response->setStatus(404);
-		};
+		$this->error    = array($this, "defaultError");
+		$this->notFound = array($this, "defaultNotFound");
 	}
 
 	/**
-	 * Processes over all of the registered resources and creates the
-	 * routing table. This can offer a significant time saving when
-	 * dispatching the request.
+	 * This method can be used to give a significant performance boost to your
+	 * application by pre-generating and caching the routing table. Note that
+	 * this caching is NOT performed automatically and that the $api->cacheFile
+	 * property needs to be set to a writable path for this to succeed.
+	 *
+	 * @see cacheFile
+	 * @return void
 	 */
 	public function createCache()
 	{
-		$cache  = new Cache($this->cachePath);
+		$cache  = new Cache($this->cacheFile);
 		$router = new Router($cache, new UrlTools());
 
 		$table = $router->getRoutingTable($this->resources);
@@ -126,14 +136,15 @@ class Api
 	}
 
 	/**
-	 * Dispatches the request and sends the response.
+	 * Routes the request the handler most appropriate.
 	 *
+	 * @see dispatch
 	 * @param Router $router
 	 * @param Request $request
 	 * @param Response $response
 	 * @return void
 	 */
-	public function dispatch(Router $router, Request $request, Response $response)
+	public function routeRequest(Router $router, Request $request, Response $response)
 	{
 		$match = $router->match(
 			$this->resources,
@@ -145,8 +156,7 @@ class Api
 			case Router::FOUND:
 				$request->setParams($match->params);
 
-				// Traverse the middleware and handler, aborting if any
-				// of handlers fail.
+				// Dispatch all middleware, abort if they return boolean false
 				foreach ($match->handlers as $handler) {
 					// PHP5.3 does not like the array($obj, $method)() calling
 					// convention so we have to use the slower call_user_func
@@ -165,8 +175,7 @@ class Api
 				break;
 
 			case Router::NOT_FOUND:
-				$notFound = $this->notFound;
-				$notFound($request, $response, $this->services);
+				call_user_func($this->notFound, $request, $response, $this->services);
 				break;
 
 			case Router::METHOD_NOT_ALLOWED:
@@ -180,20 +189,17 @@ class Api
 				}
 				break;
 		}
-
-		if (!$this->testing) {
-			$response->send();
-		}
 	}
 
 	/**
-	 * Calls the dispatcher, directing any errors to the error handler.
+	 * Dispatches the request and, if the Api is not under test, sends the
+	 * response back to the User Agent.
 	 *
 	 * @param Request $request
 	 * @param Response $response
 	 * @return void
 	 */
-	public function tryDispatch(Request $request = null, Response $response = null)
+	public function dispatch(Request $request = null, Response $response = null)
 	{
 		if (!$request) {
 			$request = new Request();
@@ -204,18 +210,53 @@ class Api
 			$response = new Response($request);
 		}
 
-		$cache  = new Cache($this->cachePath);
+		$cache  = new Cache($this->cacheFile);
 		$router = new Router($cache, new UrlTools());
 
 		try {
-			$prepare = $this->prepare;
-			$prepare($request, $response);
+			call_user_func($this->prepare, $request, $response);
 
-			$this->dispatch($router, $request, $response);
+			$this->routeRequest($router, $request, $response);
 
 		} catch (\Exception $exception) {
-			$error = $this->error;
-			$error($request, $response, $this->services, $exception);
+			call_user_func($this->error, $request, $response, $this->services, $exception);
 		}
+
+		if (!$this->testing) {
+			$response->send();
+		}
+	}
+
+	/**
+	 * Provides a minimal default error response, emitting a HTTP Status 500
+	 * and writing the exception to the User Agent.
+	 *
+	 * @param Request $req
+	 * @param Response $resp
+	 * @param Services $s
+	 * @param Exception $e
+	 * @return void
+	 */
+	public function defaultError(Request $req, Response $resp, Services $s, Exception $e)
+	{
+		$resp->setStatus(500);
+		$resp->setHeader("Content-Type", "text/html");
+		$resp->setBody("<pre>$e</pre>");
+	}
+
+	/**
+	 * Provides a minimal default not found response, emitting a HTTP Status 404
+	 * and writing "Not Found" to the User Agent.
+	 *
+	 * @param Request $req
+	 * @param Response $resp
+	 * @param Services $s
+	 * @return void
+	 */
+	public function defaultNotFound(Request $req, Response $resp, Services $s)
+	{
+		$resp->setStatus(404);
+		$resp->setHeader("Content-Type", "text/html");
+		$resp->setBody("<b>Not Found</b>");
 	}
 }
