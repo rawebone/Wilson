@@ -215,6 +215,7 @@ class Api
 
 		try {
 			call_user_func($this->prepare, $request, $response);
+			$this->services->initialise($request, $response);
 
 			$this->routeRequest($router, $request, $response);
 
