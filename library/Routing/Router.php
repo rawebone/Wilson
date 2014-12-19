@@ -65,8 +65,10 @@ class Router
 		$handler = null;
 		$table   = $this->getTable($resources);
 
-		if (isset($table["static"][$uri])) {
-			$handler = $table["static"][$uri];
+		$terminated = $this->urlTools->terminate($uri);
+
+		if (isset($table["static"][$terminated])) {
+			$handler = $table["static"][$terminated];
 
 		} else {
 			foreach ($table["dynamic"] as $expr => $handlers) {
@@ -144,10 +146,11 @@ class Router
 
 			$notation = $this->parseAnnotations($comment);
 			$compiled = $this->urlTools->compile($notation->uri, $notation->conditions);
+			$terminated = $this->urlTools->terminate($notation->uri);
 
-			$type = ($compiled === $notation->uri ? "static" : "dynamic");
+			$type = ($compiled ===  $terminated ? "static" : "dynamic");
 
-			if (!isset($table[$compiled])) {
+			if (!isset($table[$type][$compiled])) {
 				$table[$type][$compiled] = array();
 				$table[$type][$compiled]["_name"] = $reflection->getName();
 			}

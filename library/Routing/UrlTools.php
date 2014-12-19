@@ -34,7 +34,7 @@ class UrlTools
         };
 
         $regex = preg_replace_callback("#(\\{([A-Za-z0-9]+)\\})+#", $replacer, $url);
-        return "#^$regex$#";
+        return $this->terminate($regex);
     }
 
     /**
@@ -69,5 +69,16 @@ class UrlTools
         }
 
         return $params;
+    }
+
+    /**
+     * Returns a terminated regular expression.
+     *
+     * @param string $expr
+     * @return string
+     */
+    public function terminate($expr)
+    {
+        return "#^$expr$#";
     }
 }

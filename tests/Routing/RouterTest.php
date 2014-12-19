@@ -14,6 +14,7 @@ namespace Wilson\Tests\Routing;
 use Prophecy\Argument;
 use Prophecy\PhpUnit\ProphecyTestCase;
 use Prophecy\Prophecy\ObjectProphecy;
+use Wilson\Http\Response;
 use Wilson\Routing\Router;
 use Wilson\Routing\UrlTools;
 use Wilson\Utils\Cache;
@@ -95,58 +96,18 @@ ANNOTATION;
 
 	function testBuildTable()
 	{
-		$this->ut->compile("/this/is/static", Argument::type("array"))
-				 ->shouldBeCalled()
-				 ->willReturn("/this/is/static");
+		$router = new Router($this->cache->reveal(), new UrlTools());
+		$expectation = TestResource::expectedTable();
 
-		$this->ut->compile("/this/{is}/dynamic", Argument::type("array"))
-			 	 ->shouldBeCalled()
-				 ->willReturn("/this/{is}/dynamic--");
-
-		$expectation = array(
-			"static" => array(
-				"/this/is/static" => array(
-					"_name" => "Wilson\\Tests\\Routing\\TestResource",
-					"GET"   => array("test1")
-				)
-			),
-			"dynamic" => array(
-				"/this/{is}/dynamic--" => array(
-					"_name" => "Wilson\\Tests\\Routing\\TestResource",
-					"GET"   => array("test2")
-				)
-			)
-		);
-
-		$this->assertEquals($expectation, $this->router->buildTable(new TestResource()));
+		$this->assertEquals($expectation, $router->buildTable(new TestResource()));
 	}
 
 	function testGetTable()
 	{
-		$this->ut->compile("/this/is/static", Argument::type("array"))
-			->shouldBeCalled()
-			->willReturn("/this/is/static");
+		$router = new Router($this->cache->reveal(), new UrlTools());
+		$expectation = TestResource::expectedTable();
 
-		$this->ut->compile("/this/{is}/dynamic", Argument::type("array"))
-			->shouldBeCalled()
-			->willReturn("/this/{is}/dynamic--");
-
-		$expectation = array(
-			"static" => array(
-				"/this/is/static" => array(
-					"_name" => "Wilson\\Tests\\Routing\\TestResource",
-					"GET"   => array("test1")
-				)
-			),
-			"dynamic" => array(
-				"/this/{is}/dynamic--" => array(
-					"_name" => "Wilson\\Tests\\Routing\\TestResource",
-					"GET"   => array("test2")
-				)
-			)
-		);
-
-		$actual = $this->router->getTable(array(__NAMESPACE__ . "\\TestResource"));
+		$actual = $router->getTable(array(__NAMESPACE__ . "\\TestResource"));
 		$this->assertEquals($expectation, $actual);
 	}
 
@@ -156,25 +117,22 @@ ANNOTATION;
 					->shouldBeCalled()
 					->willReturn("abc");
 
-
 		$table = $this->router->getTable(array(new TestResource()));
 		$this->assertEquals("abc", $table);
 	}
 
 	function testStaticMatch()
 	{
-		$this->ut->compile("/this/is/static", Argument::type("array"))
-			->shouldBeCalled()
-			->willReturn("/this/is/static");
+		$this->cache->get("router")
+					->shouldBeCalled()
+					->willReturn(TestResource::expectedTable());
 
-		$this->ut->compile("/this/{is}/dynamic", Argument::type("array"))
-			->shouldBeCalled()
-			->willReturn("/this/{is}/dynamic--");
+		$router = new Router($this->cache->reveal(), new UrlTools());
 
 		$resource  = new TestResource();
-		$resources = array("Wilson\\Tests\\Routing\\TestResource");
+		$resources = array(__NAMESPACE__ . "\\TestResource");
 
-		$match = $this->router->match($resources, "GET", "/this/is/static");
+		$match = $router->match($resources, "GET", "/this/is/static");
 
 		$this->assertEquals(Router::FOUND, $match->status, "Match");
 		$this->assertEquals(array(array($resource, "test1")), $match->handlers, "Handlers");
@@ -182,30 +140,17 @@ ANNOTATION;
 
 	function testDynamicMatch()
 	{
-		$this->ut->compile("/this/is/static", Argument::type("array"))
-			->shouldBeCalled()
-			->willReturn("/this/is/static");
-
-		$this->ut->compile("/this/{is}/dynamic", Argument::type("array"))
-			->shouldBeCalled()
-			->willReturn("/this/{is}/dynamic--");
-
-		$this->ut->match("/this/{is}/dynamic--", "/this/1/dynamic--")
-				 ->shouldBeCalled()
-				 ->willReturn(true);
-
-		$this->ut->parameters("/this/{is}/dynamic--", "/this/1/dynamic--")
-				 ->shouldBeCalled()
-				 ->willReturn(array());
-
 		$resource  = new TestResource();
-		$resources = array("Wilson\\Tests\\Routing\\TestResource");
+		$resources = array(__NAMESPACE__ . "\\TestResource");
 
-		$match = $this->router->match($resources, "GET", "/this/1/dynamic--");
+		$this->cache->get("router")->shouldBeCalled()->willReturn(TestResource::expectedTable());
+		$router = new Router($this->cache->reveal(), new UrlTools());
+
+		$match = $router->match($resources, "GET", "/this/1/dynamic");
 
 		$this->assertEquals(Router::FOUND, $match->status, "Match");
 		$this->assertEquals(array(array($resource, "test2")), $match->handlers, "Handlers");
-		$this->assertEquals(array(), $match->params, "Parameters");
+		$this->assertEquals(array("is" => 1), $match->params, "Parameters");
 	}
 
 	function testNotFoundMatch()
@@ -216,18 +161,12 @@ ANNOTATION;
 
 	function testMethodNotAllowedMatch()
 	{
-		$this->ut->compile("/this/is/static", Argument::type("array"))
-			->shouldBeCalled()
-			->willReturn("/this/is/static");
+		$this->cache->get("router")->shouldBeCalled()->willReturn(TestResource::expectedTable());
+		$router = new Router($this->cache->reveal(), new UrlTools());
 
-		$this->ut->compile("/this/{is}/dynamic", Argument::type("array"))
-			->shouldBeCalled()
-			->willReturn("/this/{is}/dynamic--");
+		$resources = array(__NAMESPACE__ . "\\TestResource");
 
-		$resource  = new TestResource();
-		$resources = array("Wilson\\Tests\\Routing\\TestResource");
-
-		$match = $this->router->match($resources, "POST", "/this/is/static");
+		$match = $router->match($resources, "POST", "/this/is/static");
 
 		$this->assertEquals(Router::METHOD_NOT_ALLOWED, $match->status, "Match");
 		$this->assertEquals(array("GET"), $match->allowed, "Allowed");
@@ -257,4 +196,28 @@ class TestResource
 	 * @route GET /abc
 	 */
 	protected function test4() { }
+
+	/**
+	 * @route POST /this/{is}/dynamic
+	 */
+	function test5() { }
+
+	static function expectedTable()
+	{
+		return array(
+			"static" => array(
+				"#^/this/is/static$#" => array(
+					"_name" => "Wilson\\Tests\\Routing\\TestResource",
+					"GET"   => array("test1")
+				)
+			),
+			"dynamic" => array(
+				"#^/this/(?<is>[^/]+)/dynamic$#" => array(
+					"_name" => "Wilson\\Tests\\Routing\\TestResource",
+					"GET"   => array("test2"),
+					"POST"  => array("test5")
+				)
+			)
+		);
+	}
 }
