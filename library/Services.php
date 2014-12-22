@@ -35,9 +35,9 @@ class Services
 	protected $response;
 
 	/**
-	 * @var object[]
+	 * @var string[]
 	 */
-	protected $instances = array();
+	protected $loaded = array();
 
 	/**
 	 * Sets the request and the response which can be used by other objects.
@@ -49,9 +49,15 @@ class Services
 	 */
 	public function initialise(Request $request, Response $response)
 	{
-		$this->request   = $request;
-		$this->response  = $response;
-		$this->instances = array();
+		$this->request  = $request;
+		$this->response = $response;
+
+		// Clear down any loaded services
+		foreach ($this->loaded as $service) {
+			unset($this->$service);
+		}
+
+		$this->loaded = array();
 	}
 
 	/**
@@ -63,15 +69,15 @@ class Services
 	 */
 	public function __get($name)
 	{
-		if (isset($this->instances[$name])) {
-			return $this->instances[$name];
-		}
-
 		$factory = "get" . ucfirst($name);
 		if (!method_exists($this, $factory)) {
 			throw new \ErrorException("Unknown service '$name'");
 		}
 
-		return $this->instances[$name] = $this->$factory();
+		$this->loaded[] = $name;
+
+		// Cache this to the Service object itself for a faster,
+		// PHP engine based lookup
+		return $this->$name = $this->$factory();
 	}
 }
