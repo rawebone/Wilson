@@ -15,6 +15,12 @@ use Wilson\Routing\UrlTools;
 
 class UrlToolsTest extends \PHPUnit_Framework_TestCase
 {
+	public function testTerminate()
+	{
+		$ut = new UrlTools();
+		$this->assertEquals("#^a$#", $ut->terminate("a"));
+	}
+
 	public function testCompileWithNoParameters()
 	{
 		$ut = new UrlTools();

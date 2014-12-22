@@ -9,17 +9,17 @@
  * file that was distributed with this source code.
  */
 
-namespace Wilson\Tests\Caching;
+namespace Wilson\Tests\Utils;
 
-use Wilson\Caching\FileCache;
+use Wilson\Utils\Cache;
 
-class FileCacheTest extends \PHPUnit_Framework_TestCase
+class CacheTest extends \PHPUnit_Framework_TestCase
 {
 	function testStore()
 	{
 		$file = __DIR__ . "/file.php";
 
-		$cache = new FileCache($file);
+		$cache = new Cache($file);
 		$cache->set("a", "b");
 		unset($cache);
 
@@ -36,7 +36,7 @@ class FileCacheTest extends \PHPUnit_Framework_TestCase
 		$file = __DIR__ . "/file.php";
 		file_put_contents($file, "<?php return array('a' => 'b');");
 
-		$cache = new FileCache($file);
+		$cache = new Cache($file);
 		$this->assertEquals("b", $cache->get("a"));
 		unset($cache);
 

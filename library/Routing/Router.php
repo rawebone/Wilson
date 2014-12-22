@@ -13,165 +13,252 @@ namespace Wilson\Routing;
 
 use ReflectionClass;
 use ReflectionMethod;
-use Wilson\Caching\CacheInterface;
+use Wilson\Utils\Cache;
 
+/**
+ * This routing implementation is based off of nikic/fast-route, rawebone/micro
+ * and symfony/routing. The router creates a table based off of all of the
+ * resources which is divided by "static" and "dynamic" routes, the routes are
+ * defined in public object methods which have a "@route" annotation.
+ */
 class Router
 {
-    /**
-     * @var CacheInterface
-     */
-    protected $cache;
-
-    /**
-     * @var UrlTools
-     */
-    protected $urlTools;
+	/**
+	 * @route HTTP_METHOD URI
+	 */
+	const ROUTE_REGEX = "/@route ([A-Z]+) ([^\r\n]+)/";
 
 	/**
-	 * @param CacheInterface $cache
+	 * @where PARAMETER REGEX
+	 */
+	const CONDITION_REGEX = "/@where ([\\w]+) ([^\r\n]+)/";
+
+	/**
+	 * @through METHOD_NAME
+	 */
+	const THROUGH_REGEX = "/@through ([\\w\\_]+)/";
+
+	const FOUND = 1;
+	const NOT_FOUND = 2;
+	const METHOD_NOT_ALLOWED = 4;
+
+	/**
+	 * @var Cache
+	 */
+	protected $cache;
+
+	/**
+	 * @var UrlTools
+	 */
+	protected $urlTools;
+
+	/**
+	 * @param Cache $cache
 	 * @param UrlTools $urlTools
 	 */
-    public function __construct(CacheInterface $cache, UrlTools $urlTools)
-    {
-        $this->cache = $cache;
-        $this->urlTools = $urlTools;
-    }
+	public function __construct(Cache $cache, UrlTools $urlTools)
+	{
+		$this->cache = $cache;
+		$this->urlTools = $urlTools;
+	}
 
 	/**
-	 * @param array $resources
+	 * Matches a request against the resources currently available.
+	 * The object returned is in the format of:
+	 *
+	 * stdClass {
+	 *     $status;   // Router::FOUND, Router::NOT_FOUND, Router::METHOD_NOT_ALLOWED
+	 *     $allowed;  // An array of allowed HTTP methods (when METHOD_NOT_ALLOWED)
+	 *     $handlers; // A callable[] that should be dispatched (when FOUND)
+	 *     $params;   // An array of parameters matched from the URI (when FOUND)
+	 * }
+	 *
+	 * @param string[] $resources
 	 * @param string $method
 	 * @param string $uri
-	 * @return Route
+	 * @return object
 	 */
-    public function match(array $resources, $method, $uri)
-    {
-		$route = new Route;
-		$route->status = Route::NOT_FOUND;
+	public function match(array $resources, $method, $uri)
+	{
+		$route = new \stdClass();
+		$route->status = Router::NOT_FOUND;
 
-        foreach ($resources as $name => $resource) {
-            $table = $this->buildTable($name, $resource);
+		$handler    = null;
+		$urlTools   = $this->urlTools;
+		$terminated = $urlTools->terminate($uri);
+		$table      = $this->getRoutingTable($resources);
 
-            foreach ($table as $expr => $handlers) {
-                if ($this->urlTools->match($expr, $uri)) {
+		// Find the correct handler
+		if (isset($table["static"][$terminated])) {
+			$handler = $table["static"][$terminated];
 
-                    if (isset($handlers[$method])) {
-						$route->status   = Route::FOUND;
-						$route->handlers = $this->buildHandlers($resource, $handlers[$method]);
-						$route->params   = $this->urlTools->parameters($expr, $uri);
+		} else {
+			foreach ($table["dynamic"] as $expr => $handlers) {
+				if ($urlTools->match($expr, $uri)) {
+					$handler = $handlers;
+					$route->params = $urlTools->parameters($expr, $uri);
+					break;
+				}
+			}
+		}
 
-                    } else {
-						$route->status  = Route::METHOD_NOT_ALLOWED;
-						$route->allowed = array_keys($handlers);
-                    }
-                }
-            }
-        }
+		if ($handler) {
+			// GET and HEAD are treated the same by the router and the output is
+			// handled by the framework further on in the dispatch process
+			if (isset($handler[$method]) || $method === "HEAD" && isset($handler["GET"])) {
+				// Create a new instance of the resource object and set handlers
+				// to be an array of object method callables.
+				$route->status   = Router::FOUND;
+				$route->handlers = $this->buildHandlers($handler["_name"], $handler[$method]);
 
-        return $route;
-    }
+			} else {
+				// Provide accurate information to the User Agent about what
+				// HTTP methods are supported by the route.
+				$route->status  = Router::METHOD_NOT_ALLOWED;
+				$route->allowed = array_keys(array_slice($handler, 1));
+			}
+		}
+
+		return $route;
+	}
 
 	/**
-	 * @param $resourceName
-	 * @param $resource
+	 * Returns an array containing the compiled routing information based off of
+	 * the provided resource objects.
+	 *
+	 * !!! WARNING !!! This will use the cached version of the table if available
+	 * without checking for updates. It is the end users job to ensure that this
+	 * cache file is kept updated.
+	 *
+	 * @param array $resources
 	 * @return array
 	 */
-    protected function buildTable($resourceName, $resource)
-    {
-        $key = "router_" . $resourceName;
+	public function getRoutingTable(array $resources)
+	{
+		if (($table = $this->cache->get("router"))) {
+			return $table;
+		}
 
-        if ($this->cache->has($key)) {
-            return $this->cache->get($key);
-        }
+		$table = array(
+			"static"  => array(),
+			"dynamic" => array()
+		);
 
-        $table = array();
-        $reflection = new ReflectionClass($resource);
+		foreach ($resources as $resourceName) {
+			$routes = $this->buildRoutingTableEntryForResource($resourceName);
 
-        $globalMiddleware = $this->routeMiddleware($reflection->getDocComment());
+			$table["static"]  += $routes["static"];
+			$table["dynamic"] += $routes["dynamic"];
+		}
+		return $table;
+	}
 
-        foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            /** @var ReflectionMethod $method */
-            $comment = $method->getDocComment();
+	/**
+	 * Compiles an array of routing information based off of a resource object.
+	 *
+	 * @param string $resourceName
+	 * @return array
+	 */
+	public function buildRoutingTableEntryForResource($resourceName)
+	{
+		$table = array(
+			"static"  => array(),
+			"dynamic" => array()
+		);
 
-            if (strpos($comment, "@route") === false) {
-                continue;
-            }
+		$urlTools   = $this->urlTools;
+		$reflection = new ReflectionClass($resourceName);
 
-            list($httpMethod, $uri) = $this->routeAnnotation($comment);
-            $conditions = $this->routeConditions($comment);
-            $middleware = $this->routeMiddleware($comment);
+		foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+			/** @var ReflectionMethod $method */
+			$comment = $method->getDocComment();
 
-            $compiled = $this->urlTools->compile($uri, $conditions);
+			if (strpos($comment, "@route") === false) {
+				continue;
+			}
 
-            if (!isset($table[$compiled])) {
-                $table[$compiled] = array();
-            }
+			$metaData   = $this->parseAnnotations($comment);
+			$compiled   = $urlTools->compile($metaData->uri, $metaData->conditions);
+			$terminated = $urlTools->terminate($metaData->uri);
 
-            $handlers = array();
-            foreach ($globalMiddleware as $ware) {
-                $handlers[] = $ware;
-            }
-            foreach ($middleware as $ware) {
-                $handlers[] = $ware;
-            }
-            $handlers[] = $method->name;
+			// If a route does not have any regex we can optimise its dispatch
+			$type = ($compiled ===  $terminated ? "static" : "dynamic");
 
-            $table[$compiled][$httpMethod] = $handlers;
-        }
+			// Only create table entries where necessary to avoid bloating
+			// the table.
+			if (!isset($table[$type][$compiled])) {
+				$table[$type][$compiled] = array();
+				$table[$type][$compiled]["_name"] = $reflection->getName();
+			}
 
-        $this->cache->set($key, $table);
-        return $table;
-    }
+			// Ensure that the method will be invoked after all other middleware
+			$metaData->middleware[] = $method->name;
 
-    protected function buildHandlers($resource, array $handlers)
-    {
-        $return = array();
-        foreach ($handlers as $handler) {
-            $return[] = array($resource, $handler);
-        }
-        return $return;
-    }
+			$table[$type][$compiled][$metaData->method] = $metaData->middleware;
+		}
 
-    /**
-     * Returns the route associated with the annotation.
-     *
-     * @param string $comment
-     * @return <method, uri>|null
-     */
-    protected function routeAnnotation($comment)
-    {
-        if (preg_match("/@route (GET|POST|DELETE|PUT|PATCH|OPTIONS|HEAD) ([^\r\n]+)/", $comment, $matches)) {
-            return array($matches[1], $matches[2]);
-        }
+		return $table;
+	}
 
-        return null;
-    }
+	/**
+	 * This parses a comment for framework relevant annotations. This is kept as
+	 * a single method call to maximise efficiency when caching is not available.
+	 *
+	 * @param string $comment
+	 * @return object
+	 */
+	public function parseAnnotations($comment)
+	{
+		$annotations = array(
+			"method" => "",
+			"uri" => "",
+			"conditions" => array(),
+			"middleware" => array()
+		);
 
-    /**
-     * Returns the route associated with the annotation.
-     *
-     * @param string $comment
-     * @return <name, expr>[]|null
-     */
-    protected function routeConditions($comment)
-    {
-        if (preg_match_all("/@where ([\\w]+) ([^\r\n]+)/", $comment, $matches)) {
-            $conditions = array();
-            for ($i = 0, $len = count($matches[1]); $i < $len; $i++) {
-                $conditions[$matches[1][$i]] = $matches[2][$i];
-            }
+		// Handle the route @route METHOD URI
+		if (preg_match(Router::ROUTE_REGEX, $comment, $matches)) {
+			$annotations["method"] = $matches[1];
+			$annotations["uri"] = $matches[2];
+		}
 
-            return $conditions;
-        }
+		// Handle route conditions @where PARAMETER REGEX
+		if (preg_match_all(Router::CONDITION_REGEX, $comment, $matches)) {
+			for ($i = 0, $len = count($matches[1]); $i < $len; $i++) {
+				$annotations["conditions"][$matches[1][$i]] = $matches[2][$i];
+			}
+		}
 
-        return array();
-    }
+		// Handle middleware @through METHOD_NAME
+		if (preg_match_all(Router::THROUGH_REGEX, $comment, $matches)) {
+			$annotations["middleware"] = $matches[1];
+		}
 
-    protected function routeMiddleware($comment)
-    {
-        if (preg_match_all("/@through ([\\w\\_]+)/", $comment, $matches)) {
-            return $matches[1];
-        }
+		return (object)$annotations;
+	}
 
-        return array();
-    }
+	/**
+	 * Returns an array of object method callables in the format of:
+	 * array(array($resource, $handler)). An instance of type
+	 * $resourceName will be created.
+	 *
+	 * !!! WARNING !!! This method has no idea what parameters are
+	 * required for construction of the resource and so assumes none.
+	 * This can lead to runtime issues that the framework cannot
+	 * prevent, so ensure your resources are defined as stateless.
+	 *
+	 * @param string $resourceName
+	 * @param array $handlers
+	 * @return callable[]
+	 */
+	public function buildHandlers($resourceName, array $handlers)
+	{
+		$return = array();
+		$object = new $resourceName();
+
+		foreach ($handlers as $handler) {
+			$return[] = array($object, $handler);
+		}
+		return $return;
+	}
 }

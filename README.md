@@ -1,112 +1,79 @@
 # Wilson
 
+[![Build Status](https://secure.travis-ci.org/rawebone/Wilson.png?branch=perf)](http://travis-ci.org/rawebone/Wilson)
+
 Dr James Wilson is my favourite character in House. He's  balanced, smart,
 and an enabler of the genius of the title character, all the while hidden
 away in the background.
 
-These are also the kinds of qualities that I seek out in the code I use- I
-want a framework that makes reasonable decisions about how a request should
-be handled without getting in my way or slowing me down. This framework is
-an attempt therefore to distill those qualities into some lightweight code,
-and comes off of the back of two of my earliar attempts: 
-[Micro](https://github.com/rawebone/Micro) and 
-[Razor](https://github.com/rawebone/Razor). Both of these libraries had good
-qualities but both focused on mapping HTTP Methods to handlers; Micro got the
-structure right, Razor got service injection. Wilson has both.
+This framework is built for high performance RESTful web services; to do so
+I've had to leave out the thrills in terms of the setup code but the pay of
+is good performance and:
+
+* Annotation based routing
+* A lightweight HTTP abstraction based off of that available in
+  [Slim](http://www.slimframework.com/)
+* A Service Container mechanism
 
 
-## Application in a Nutshell
+## Usage
+
+At a glance, an application in the framework looks like this:
 
 ```php
 <?php
 
-require_once "vendor/autoload.php";
+require_once "/path/to/vendor/autoload.php";
 
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-
-/**
- * Services allow us to decouple and lazy load our code. Additionally
- * other libraries can wrap themselves up with a provider and expose
- * itself to your application through the framework.
- */
-class Services implements \Wilson\Injection\ProviderInterface
-{
-    public function register(\Wilson\Injection\Injector $injector)
-    {
-        // Define a connection object here - this can be accessed
-        // by the name of "conn" in our function signatures.
-        $injector->service("conn", function ()
-        {
-            return new PDO($dsn, $user, $pass);
-        });
-    }
-}
-
-/**
- * Wilson is organised around the concept of resources which are plain,
- * annotated objects that define how requests should be routed.
- */
-class UserResource
-{
-    /**
-     * @route GET /users
-     */
-    public function collection(PDO $conn, Response $resp)
-    {
-        $result = $conn->query("SELECT * FROM table");
-        
-        $resp->headers->set("Content-Type", "application/json");
-        $resp->setContent(json_encode($result->fetchAll(), true));
-    }
-    
-    /**
-     * @route GET /users/{id}
-     */
-    public function item(PDO $conn, Response $resp, Request $req)
-    {
-        $stmt = $conn->prepare("SELECT * FROM table WHERE id = ?");
-        $stmt->execute(array($req->get("id"));
-        
-        $resp->headers->set("Content-Type", "application/json");
-        $resp->setContent(json_encode($result->fetchAll(), true));
-    }
-    
-    /**
-     * @route GET /users/{id:\d+}/notifications
-     */
-    public function notifications()
-    {
-        // ...
-    }
-}
-
-$config = array(
-    // Disables errors being output with the default
-    // error handler.
-    "environment" => "production",
-     
-    // This enables the router caching.
-    // The router cache will not be refreshed with changes to the app.
-    "cachePath" => "/var/www/cache/router.php"
-);
-
-$api = \Wilson\Api::createServer();
-$api->attach(new UserResource())
-    ->service(new Services())
-    ->run();
-
-// Et viola ...
+$api = new Wilson\Api();
+$api->resources = array( "My\Restful\ResourceA" );
+$api->dispatch();
 
 ```
+
+```php
+<?php
+
+namespace My\Restful;
+
+use Wilson\Services;
+use Wilson\Http\Request;
+use Wilson\Http\Response;
+
+class ResourceA
+{
+    /**
+     * @route GET /resource-a/
+     */
+    function getCollection(Request $request, Response $response, Services $services)
+    {
+        $data = array("a", "b", "c");
+        
+        $response->setStatus(200);
+        $response->setHeader("Content-Type", "application/json");
+        $response->setBody(json_encode($data));
+    }
+}
+
+```
+
+Look at the [docs](docs/index.md) for a proper guide through the functionality.
+
 
 ## TODO
 
 * Improve Test Coverage
-* Implement middleware handling
+* Add Cookie handling from Slim
+* Add File handling
+* Complete implementation of HTTP Caching
+
+
+## Credits
+
+* Josh Lockhart and other contributors to [Slim Framework](http://www.slimframework.com)
+* Fabien Potencier and other contributors to [Symfony](http://symfony.com)
 
 
 ## License
 
 [MIT License](LICENSE), go hog wild.
-

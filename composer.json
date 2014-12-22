@@ -2,8 +2,6 @@
     "name": "rawebone/wilson",
     "description": "A Resource Orientated Framework for designing RESTful APIs",
     "keywords": [ "REST", "routing", "testable" ],
-    "minimum-stability": "dev",
-    "prefer-stable": true,
     "license": "MIT",
     "authors": [
         {
@@ -20,9 +18,6 @@
         "psr-4": {
             "Wilson\\Tests\\": "tests/"
         }
-    },
-    "require": {
-        "symfony/http-foundation": "2.5.*"
     },
     "require-dev": {
         "phpunit/phpunit": "4.3.*",
