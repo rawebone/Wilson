@@ -72,11 +72,11 @@ request. So it creates an instance of the `Users` object and calls the `getUsers
 method, passing it a request and response object. Once the call to `getUsers`
 completes the response is then prepared and sent back to the User Agent.
 
-    The framework creates an instance of the `Users` object because it minimises the
-    amount of objects that are held in memory during the processing of the request
-    which helps reduce your applications footprint. The knock on effect is that the
-    Resource object cannot have any constructor arguments and as such any
-    dependencies have to be used with the [Service Container](services.md).
+> The framework creates an instance of the `Users` object because it minimises the
+> amount of objects that are held in memory during the processing of the request
+> which helps reduce your applications footprint. The knock on effect is that the
+> Resource object cannot have any constructor arguments and as such any
+> dependencies have to be used with the [Service Container](services.md).
 
 So far so simples. However, we now want to return a single user through our API
 with a URI like `/users/1` - how do we do this? Wilson provides the ability to
@@ -136,12 +136,12 @@ Parameters called **Conditions** that allows you more control over your input:
 We are now saying that the Parameter `id` must meet the regular expression of
 `\d+` or in other words that `id` __must__ be an integer of any length.
  
-    It is worth keeping in mind when developing an API that using integer
-    based IDs can enable third parties to easily scrape your data and so
-    should be used with caution.
+> It is worth keeping in mind when developing an API that using integer
+> based IDs can enable third parties to easily scrape your data and so
+> should be used with caution.
 
 
-## Middleware
+### Middleware
 
 Often when working with an API you find yourself performing repetitive tasks
 such as authentication, content acceptance, et al. You might find yourself
