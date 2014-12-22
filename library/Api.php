@@ -112,7 +112,7 @@ class Api
 	public function __construct()
 	{
 		$this->services = new Services();
-		$this->prepare  = function () { };
+		$this->prepare  = array($this, "defaultPrepare");
 		$this->error    = array($this, "defaultError");
 		$this->notFound = array($this, "defaultNotFound");
 	}
@@ -260,5 +260,17 @@ class Api
 		$resp->setStatus(404);
 		$resp->setHeader("Content-Type", "text/html");
 		$resp->setBody("<b>Not Found</b>");
+	}
+
+	/**
+	 * Placeholder prepare function.
+	 *
+	 * @param Request $request
+	 * @param Response $response
+	 * @return void
+	 */
+	public function defaultPrepare(Request $request, Response $response)
+	{
+
 	}
 }
