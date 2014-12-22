@@ -173,6 +173,30 @@ class Request extends MessageAbstract
         }
     }
 
+    public function mock($server = array(), $get = array(), $post = array(), $content = "")
+    {
+        $defaults = array(
+            "REQUEST_METHOD" => "GET",
+            "REQUEST_URI" => "/",
+            "SCRIPT_NAME" => "/index.php",
+            "PATH_INFO" => "",
+            "QUERY_STRING" => "",
+            "SERVER_NAME" => "localhost",
+            "SERVER_PORT" => 80,
+            "SERVER_PROTOCOL" => "HTTP/1.1",
+            "ACCEPT" => "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "ACCEPT_LANGUAGE" => "en-US,en;q=0.8",
+            "ACCEPT_CHARSET" => "ISO-8859-1,utf-8;q=0.7,*;q=0.3",
+            "USER_AGENT" => "Wilson Framework",
+            "REMOTE_ADDR" => "127.0.0.1",
+            "HTTPS" => "off"
+        );
+
+        file_put_contents("php://memory", $content);
+
+        $this->initialise(array_merge($defaults, $server), $get, $post, array(), array(), "php://memory");
+    }
+
     /**
      * @return string
      */
