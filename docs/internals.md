@@ -31,7 +31,7 @@ high indeed and the lower the latency the better.
 
 One of the simplest ways to judge efficiency in a system is to look at how many
 objects are being created and what they are encapsulating to see what kind of
-overheads you will be stuck with at runtime. Consider the following from paradigm:
+overheads you will be stuck with at runtime. Consider the following paradigm:
 
 ```php
 
@@ -44,7 +44,7 @@ $app->get("/a", function () {
 This kind of example will be familiar to anyone whose worked with Micro-frameworks
 and is widely used but we have a distinct problem here: every route has a cost of
 two objects which have to exist at runtime. This means that your application has
-causes allocations for framework objects + 200 objects + business objects to
+causes allocations for `framework objects + 200 objects + business objects` to
 define an API with 100 routes in it and that cannot be easily optimised.
 
 Sure you can use an OPCache to reduce the parse time but you still end up with
@@ -54,7 +54,7 @@ matched, meaning you have massive waste before you've even started.
 This isn't to say that this paradigm cannot work, indeed in small systems it
 can. But most systems are not small. If you assume an API has five resources
 and at least the basic operations are supported you are looking at 25 end
-points which will end up at framework objects + 50 objects + business objects;
+points which will end up at `framework objects + 50 objects + business objects`;
 it gets messy quickly.
 
 It is worth noting that Slim has recently taken a position of allowing a
@@ -74,14 +74,14 @@ accept that this is true to a point, but if you have a well defined names
 for your resources and controllers, it makes just as much sense to keep
 it in annotations.
 
-I'd make a detailed about the Monolithic frameworks here but they imbue
+I'd make a detailed point about the Monolithic frameworks here but they imbue
 so much complexity that it is easier to say that Symfony Http Foundation is
 twice the size of Wilson and at runtime creates nearly as many objects if
 you only choose to use its Request and Response objects. Http Foundation
 was the original library used by Wilson but proved to be much to heavy.
 
-The approach taken with Wilson is to keep the object graph tight: framework +
-1 object + business objects will always be the case. Because Controllers are
+The approach taken with Wilson is to keep the object graph tight: `framework +
+1 object + business objects` will always be the case. Because Controllers are
 assigned to the object there is a negligible memory overhead for loading them,
 if you are autoloading the Controllers even less so. Because the framework
 creates the Resource object it will only ever load a single instance. 
