@@ -187,6 +187,33 @@ class Response extends MessageAbstract
     }
 
     /**
+     * @param string $url
+     * @param int $status
+     * @return void
+     */
+    public function setRedirect($url, $status)
+    {
+        $this->setStatus($status);
+        $this->setHeader("Location", $url);
+    }
+
+    /**
+     * @param \DateTime $date
+     * @return void
+     */
+    public function setExpires(\DateTime $date = null)
+    {
+        if ($date === null) {
+            $this->unsetHeader("Expires");
+
+        } else {
+            $date = clone $date;
+            $date->setTimezone(new \DateTimeZone("UTC"));
+            $this->setHeader("Expires", $date->format("D, d M Y H:i:s T"));
+        }
+    }
+
+    /**
      * @param \DateTime $date
      * @return void
      */
@@ -198,7 +225,7 @@ class Response extends MessageAbstract
         } else {
             $date = clone $date;
             $date->setTimezone(new \DateTimeZone("UTC"));
-            $this->setHeaders("Last-Modified", $date->format("D, d M Y H:i:s") ." GMT");
+            $this->setHeaders("Last-Modified", $date->format("D, d M Y H:i:s T"));
         }
     }
 
