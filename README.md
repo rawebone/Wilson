@@ -64,8 +64,14 @@ Look at the [docs](docs/index.md) for a proper guide through the functionality.
 
 * Improve Test Coverage
 * Add Cookie handling from Slim
-* Implement HTTP Caching
-* Improve documentation
+* Add File handling
+* Complete implementation of HTTP Caching
+
+
+## Credits
+
+* Josh Lockhart and other contributors to [Slim Framework](http://www.slimframework.com)
+* Fabien Potencier and other contributors to [Symfony](http://symfony.com)
 
 
 ## License
