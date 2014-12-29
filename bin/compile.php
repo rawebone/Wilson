@@ -60,7 +60,7 @@ function build_map(array &$map, $path, $lastPath)
 	foreach (new DirectoryIterator($path) as $file) {
 
 		/** @var SplFileInfo $file */
-		if (in_array($file->getBasename(), array(".", ".."))) {
+		if (in_array($file->getBasename(), array(".", "..")) || $file->getBasename() === "TestCase.php") {
 			continue;
 		}
 
@@ -84,13 +84,14 @@ function build_map(array &$map, $path, $lastPath)
 				$map[$ns]["imports"] = array();
 			}
 
-			$catchImport = function (array $match) use ($ns, &$map)
-			{
-				$map[$ns]["imports"][] = $match[1];
-				return "";
-			};
+			// Process imports
+			while (($useStart = strpos($body, "use ")) === 0) {
+				$useStop = strpos($body, ";", $useStart);
+				$use     = substr($body, $useStart + 4, $useStop - ($useStart + 4));
+				$body    = trim(substr($body, $useStop + 1));
 
-			$body = preg_replace_callback("/^use ([^;]+);$/m", $catchImport, $body);
+				$map[$ns]["imports"][] = $use;
+			}
 
 			$map[$ns]["classes"][] = trim($body);
 		}
