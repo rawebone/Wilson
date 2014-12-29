@@ -220,4 +220,52 @@ left. A Middleware Controller is exactly the same as a Controller, the only
 difference being that a Middleware Controller does not have a `@route`
 annotation.
 
+
+## Advanced Handling 
+
+### Preparing Requests and Responses
+
+The framework allows you to setup headers/parameters against the request/
+responses prior to the routing of the request.
+
+```php
+
+$api->prepare = function (Request $request, Response $response)
+{
+    // ...
+};
+
+```
+
+
+### Error Handling
+
+If an exception is thrown during the dispatch of the request, the
+framework exposes a slot to handle this event:
+
+```php
+
+$api->error = function (Request $req, Response $resp, Services $s, Exception $e)
+{
+    // ...
+};
+
+```
+
+
+### Not Found Handling
+
+If a request cannot be routed, the framework exposes a slot to handle this
+event:
+
+```php
+
+$api->notFound = function (Request $request, Response $response, Services $services)
+{
+    // ...
+};
+
+```
+
+
 ## Next: [Services](services.md)

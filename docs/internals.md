@@ -70,7 +70,7 @@ This definitely helps but creates a new problem - the route definition is
 placed farther from the Controller that reacts to it. Some sources, such
 as the excellent "Build APIs You Won't Hate" by Phil Sturgeon suggest that
 this allows you to easily identify the URL's in your application; I'll
-accept that this is true to a point, but if you have a well defined names
+accept that this is true to a point, but if you have well defined names
 for your resources and controllers, it makes just as much sense to keep
 it in annotations.
 
@@ -84,7 +84,7 @@ The approach taken with Wilson is to keep the object graph tight: `framework +
 1 object + business objects` will always be the case. Because Controllers are
 assigned to the object there is a negligible memory overhead for loading them,
 if you are autoloading the Controllers even less so. Because the framework
-creates the Resource object it will only ever load a single instance. 
+creates the Resource object it will only ever load a single instance.
 
 
 ## Superflous Method Calls
@@ -138,7 +138,12 @@ $api->resources = array("Users");
 
 There is no safety in this approach- if one were to assign a string to resources
 it will break, for example. But with the right documentation you can teach people
-to avoid this pitfall easily and in the process remove a superflous setter.
+to avoid this pitfall easily and in the process remove a superfluous setter.
+
+> There are obviously caveats here. DSLs usually provide method calls over direct
+> state assignment because they can be made fluent, giving you nice clean code, or
+> because they can be easily mocked and spied upon while direct property assignment
+> is usually not.
 
 There are additional cases. The Pimple Service Locator is a model for how Slim
 and Silex handle SL but they create a problem: they act like an array over an
@@ -224,10 +229,3 @@ function get($name)
 ```
 
 Performance improves and the code is as clean as before.
-
-
-## Autoloading
-
-Autoloading is a brilliant thing, I'm not a naysayer. However it is slow;
-in a test application Composers autoloader with optimisation accounted for
-nearly 12% of the request processing time.
