@@ -38,7 +38,7 @@ foreach ($map as $ns => $data) {
 	$buffer .= "}" . PHP_EOL . PHP_EOL;
 }
 
-file_put_contents(__DIR__ . "/../compiled.php", $buffer);
+file_put_contents(getcwd() . "/compiled.php", $buffer);
 
 function write_license(&$buffer)
 {
