@@ -206,7 +206,7 @@ class TestResource
 	{
 		return array(
 			"static" => array(
-				"#^/this/is/static$#" => array(
+				"/this/is/static" => array(
 					"_name" => "Wilson\\Tests\\Routing\\TestResource",
 					"GET"   => array("test1")
 				)

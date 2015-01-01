@@ -83,14 +83,13 @@ class Router
 		$route = new \stdClass();
 		$route->status = Router::NOT_FOUND;
 
-		$handler    = null;
-		$urlTools   = $this->urlTools;
-		$terminated = $urlTools->terminate($uri);
-		$table      = $this->getRoutingTable($resources);
+		$handler  = null;
+		$urlTools = $this->urlTools;
+		$table    = $this->getRoutingTable($resources);
 
 		// Find the correct handler
-		if (isset($table["static"][$terminated])) {
-			$handler = $table["static"][$terminated];
+		if (isset($table["static"][$uri])) {
+			$handler = $table["static"][$uri];
 
 		} else {
 			foreach ($table["dynamic"] as $expr => $handlers) {
@@ -172,7 +171,6 @@ class Router
 		foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
 			/** @var ReflectionMethod $method */
 			$comment = $method->getDocComment();
-
 			if (strpos($comment, "@route") === false) {
 				continue;
 			}
@@ -180,9 +178,17 @@ class Router
 			$metaData   = $this->parseAnnotations($comment);
 			$compiled   = $urlTools->compile($metaData->uri, $metaData->conditions);
 			$terminated = $urlTools->terminate($metaData->uri);
+			$type       = "dynamic";
 
-			// If a route does not have any regex we can optimise its dispatch
-			$type = ($compiled ===  $terminated ? "static" : "dynamic");
+			// If the route does not have any regex parameters we can optimise
+			// its dispatch by putting it into the static portion of the table.
+			// Note that we do not use the compiled form because it means we
+			// can do a direct check on the static table without needing to make
+			// superfluous calls to UrlTools::terminate() in the matcher.
+			if ($compiled === $terminated) {
+				$type = "static";
+				$compiled = $metaData->uri;
+			}
 
 			// Only create table entries where necessary to avoid bloating
 			// the table.
