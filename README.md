@@ -2,18 +2,13 @@
 
 [![Build Status](https://secure.travis-ci.org/rawebone/Wilson.png?branch=perf)](http://travis-ci.org/rawebone/Wilson)
 
-Dr James Wilson is my favourite character in House. He's  balanced, smart,
-and an enabler of the genius of the title character, all the while hidden
-away in the background.
-
-This framework is built for high performance RESTful web services; to do so
-I've had to leave out the thrills in terms of the setup code but the pay of
-is good performance and:
+Wilson is a PHP Micro framework aimed at providing methodologies associated with
+full stack frameworks without the performance penalties, those being:
 
 * Annotation based routing
+* Service Location
 * A lightweight HTTP abstraction based off of that available in
   [Slim](http://www.slimframework.com/)
-* A Service Container mechanism
 
 
 ## Usage
@@ -22,6 +17,8 @@ At a glance, an application in the framework looks like this:
 
 ```php
 <?php
+
+// File: public/index.php
 
 require_once "/path/to/vendor/autoload.php";
 
@@ -34,18 +31,16 @@ $api->dispatch();
 ```php
 <?php
 
-namespace My\Restful;
+// File: src/My/Restful/ResourceA.php
 
-use Wilson\Services;
-use Wilson\Http\Request;
-use Wilson\Http\Response;
+namespace My\Restful;
 
 class ResourceA
 {
     /**
      * @route GET /resource-a/
      */
-    function getCollection(Request $request, Response $response, Services $services)
+    function getCollection($request, $response, $services)
     {
         $data = array("a", "b", "c");
         

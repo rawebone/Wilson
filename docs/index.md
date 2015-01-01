@@ -6,10 +6,7 @@ simple system for developing RESTful APIs. Its development principles are:
 * **Performance**
   The framework does the least amount of work possible to get you from A to B
   and has been written to reduce the % of time consumed per request to its
-  lowest level. As with any framework there is an overhead but there isn't
-  a framework out there which offers the same concision and functionality
-  out of the box without a major time penalty or requiring high availability
-  environments.
+  lowest possible level. 
 
 * **Testability**
   A lot of Micro-frameworks focus more on the routing technology and not enough
