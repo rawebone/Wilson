@@ -12,9 +12,11 @@
 namespace Wilson\Http;
 
 /**
- * Parts of this code are based off the Slim\Http\Response object included
- * in the Slim framework.
- *
+ * This object has been derived from Slim framework in the main and Symfony
+ * HttpFoundation in other places. Their licences:
+ */
+
+/**
  * Slim - a micro PHP 5 framework
  *
  * @author      Josh Lockhart <info@slimframework.com>
@@ -46,6 +48,28 @@ namespace Wilson\Http;
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/**
+ * Copyright (c) 2004-2014 Fabien Potencier
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is furnished
+ * to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 class Response extends MessageAbstract
 {
     /**
@@ -55,6 +79,7 @@ class Response extends MessageAbstract
         // Informational 1xx
         100 => "100 Continue",
         101 => "101 Switching Protocols",
+
         // Successful 2xx
         200 => "200 OK",
         201 => "201 Created",
@@ -63,6 +88,7 @@ class Response extends MessageAbstract
         204 => "204 No Content",
         205 => "205 Reset Content",
         206 => "206 Partial Content",
+
         // Redirection 3xx
         300 => "300 Multiple Choices",
         301 => "301 Moved Permanently",
@@ -72,6 +98,7 @@ class Response extends MessageAbstract
         305 => "305 Use Proxy",
         306 => "306 (Unused)",
         307 => "307 Temporary Redirect",
+
         // Client Error 4xx
         400 => "400 Bad Request",
         401 => "401 Unauthorized",
@@ -94,6 +121,7 @@ class Response extends MessageAbstract
         418 => "418 I\"m a teapot",
         422 => "422 Unprocessable Entity",
         423 => "423 Locked",
+
         // Server Error 5xx
         500 => "500 Internal Server Error",
         501 => "501 Not Implemented",
@@ -106,8 +134,9 @@ class Response extends MessageAbstract
      * @var string
      */
     protected $protocol = "HTTP/1.1";
+
     /**
-     * @var int HTTP status code
+     * @var int
      */
     protected $status = 200;
 
