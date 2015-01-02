@@ -359,7 +359,7 @@ class Request extends MessageAbstract
      *
      * @return array
      */
-    public function files()
+    public function getFiles()
     {
         return $this->files;
     }
