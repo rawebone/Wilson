@@ -217,7 +217,7 @@ class Api
                 break;
 
             case Router::METHOD_NOT_ALLOWED:
-                $response->setHeader("Allow", $match->allowed);
+                $response->setHeader("Allow", join(", ", $match->allowed));
 
                 if ($request->getMethod() === "OPTIONS") {
                     $response->setStatus(200);
