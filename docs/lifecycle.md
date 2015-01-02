@@ -221,6 +221,21 @@ difference being that a Middleware Controller does not have a `@route`
 annotation.
 
 
+## Request and Response Headers
+
+Please be aware that header names **are not normalised** between requests and
+responses. This is because normalising the names of headers in the `$_SERVER`
+superglobal can add a substantial amount of time to the request add so we
+instead use the SAPI appropriate names, i.e.:
+
+```php
+
+$req->getHeader("HTTP_CONTENT_TYPE");
+$resp->setHeader("Content-Type", "text/html");
+
+```
+
+
 ## Advanced Handling 
 
 ### Preparing Requests and Responses
