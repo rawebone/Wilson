@@ -8,7 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
- 
+
 namespace Wilson;
 
 use Wilson\Http\Request;
@@ -24,60 +24,60 @@ use Wilson\Http\Response;
  */
 class Services
 {
-	/**
-	 * @var Request
-	 */
-	protected $request;
+    /**
+     * @var Request
+     */
+    protected $request;
 
-	/**
-	 * @var Response
-	 */
-	protected $response;
+    /**
+     * @var Response
+     */
+    protected $response;
 
-	/**
-	 * @var string[]
-	 */
-	protected $loaded = array();
+    /**
+     * @var string[]
+     */
+    protected $loaded = array();
 
-	/**
-	 * Sets the request and the response which can be used by other objects.
-	 *
-	 * !!! WARNING !!! calling this method also clears the instance cache.
-	 *
-	 * @param Request $request
-	 * @param Response $response
-	 */
-	public function initialise(Request $request, Response $response)
-	{
-		$this->request  = $request;
-		$this->response = $response;
+    /**
+     * Sets the request and the response which can be used by other objects.
+     *
+     * !!! WARNING !!! calling this method also clears the instance cache.
+     *
+     * @param Request $request
+     * @param Response $response
+     */
+    public function initialise(Request $request, Response $response)
+    {
+        $this->request = $request;
+        $this->response = $response;
 
-		// Clear down any loaded services
-		foreach ($this->loaded as $service) {
-			unset($this->$service);
-		}
+        // Clear down any loaded services
+        foreach ($this->loaded as $service) {
+            unset($this->$service);
+        }
 
-		$this->loaded = array();
-	}
+        $this->loaded = array();
+    }
 
-	/**
-	 * Returns a service identified by name.
-	 *
-	 * @param string $name
-	 * @return object
-	 * @throws \ErrorException
-	 */
-	public function __get($name)
-	{
-		$factory = "get" . ucfirst($name);
-		if (!method_exists($this, $factory)) {
-			throw new \ErrorException("Unknown service '$name'");
-		}
+    /**
+     * Returns a service identified by name.
+     *
+     * @param string $name
+     * @return object
+     * @throws \ErrorException
+     */
+    public function __get($name)
+    {
+        $factory = "get" . ucfirst($name);
+        if (!method_exists($this, $factory)) {
+            throw new \ErrorException("Unknown service '$name'");
+        }
 
-		$this->loaded[] = $name;
+        $this->loaded[] = $name;
 
-		// Cache this to the Service object itself for a faster,
-		// PHP engine based lookup
-		return $this->$name = $this->$factory();
-	}
+        // Cache this to the Service object itself for a faster,
+        // PHP engine based lookup
+        return $this->$name = $this->$factory();
+    }
 }

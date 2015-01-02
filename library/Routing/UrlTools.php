@@ -38,6 +38,17 @@ class UrlTools
     }
 
     /**
+     * Returns a terminated regular expression.
+     *
+     * @param string $expr
+     * @return string
+     */
+    public function terminate($expr)
+    {
+        return "#^$expr$#";
+    }
+
+    /**
      * Returns whether the given URL regex matches the given query string.
      *
      * @param string $regex
@@ -69,16 +80,5 @@ class UrlTools
         }
 
         return $params;
-    }
-
-    /**
-     * Returns a terminated regular expression.
-     *
-     * @param string $expr
-     * @return string
-     */
-    public function terminate($expr)
-    {
-        return "#^$expr$#";
     }
 }

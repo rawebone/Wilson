@@ -49,23 +49,12 @@ namespace Wilson\Http;
 class Response extends MessageAbstract
 {
     /**
-     * @var string
-     */
-    protected $protocol = "HTTP/1.1";
-
-    /**
-     * @var int HTTP status code
-     */
-    protected $status = 200;
-
-    /**
      * @var array HTTP response codes and messages
      */
     protected static $messages = array(
         // Informational 1xx
         100 => "100 Continue",
         101 => "101 Switching Protocols",
-
         // Successful 2xx
         200 => "200 OK",
         201 => "201 Created",
@@ -74,7 +63,6 @@ class Response extends MessageAbstract
         204 => "204 No Content",
         205 => "205 Reset Content",
         206 => "206 Partial Content",
-
         // Redirection 3xx
         300 => "300 Multiple Choices",
         301 => "301 Moved Permanently",
@@ -84,7 +72,6 @@ class Response extends MessageAbstract
         305 => "305 Use Proxy",
         306 => "306 (Unused)",
         307 => "307 Temporary Redirect",
-
         // Client Error 4xx
         400 => "400 Bad Request",
         401 => "401 Unauthorized",
@@ -107,7 +94,6 @@ class Response extends MessageAbstract
         418 => "418 I\"m a teapot",
         422 => "422 Unprocessable Entity",
         423 => "423 Locked",
-
         // Server Error 5xx
         500 => "500 Internal Server Error",
         501 => "501 Not Implemented",
@@ -116,27 +102,14 @@ class Response extends MessageAbstract
         504 => "504 Gateway Timeout",
         505 => "505 HTTP Version Not Supported"
     );
-
     /**
-     * @return int
+     * @var string
      */
-    public function getStatus()
-    {
-        return $this->status;
-    }
-
+    protected $protocol = "HTTP/1.1";
     /**
-     * @param int $status
-     * @throws \InvalidArgumentException
+     * @var int HTTP status code
      */
-    public function setStatus($status)
-    {
-        $this->status = (int)$status;
-
-        if ($this->status < 100 || $this->status > 600) {
-            throw new \InvalidArgumentException("HTTP Status $this->status is invalid!");
-        }
-    }
+    protected $status = 200;
 
     /**
      * @return bool
@@ -144,14 +117,6 @@ class Response extends MessageAbstract
     public function isOk()
     {
         return $this->status === 200;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isInformational()
-    {
-        return $this->status >= 100 && $this->status < 200;
     }
 
     /**
@@ -246,51 +211,6 @@ class Response extends MessageAbstract
     }
 
     /**
-     * Determines if the requested resource has been modified since the
-     * last request, allowing us to optimise the response. This is based
-     * off of Symfony\Component\HttpFoundation\Response::isNotModified().
-     *
-     * @param Request $request
-     */
-    public function checkForModifications(Request $request)
-    {
-        if (!$request->isSafeMethod()) {
-            return;
-        }
-
-        $notModified   = false;
-        $lastModified  = $this->getHeader("Last-Modified");
-        $modifiedSince = $request->getModifiedSince();
-
-        if (($eTags = $request->getETags())) {
-            $notModified = in_array($this->getHeader("ETag"), $eTags) || in_array("*", $eTags);
-        }
-
-        if ($modifiedSince && $lastModified) {
-            $notModified = strtotime($modifiedSince) >= strtotime($lastModified) && (!$eTags || $notModified);
-        }
-
-        if ($notModified) {
-            $this->setStatus(304);
-
-            // These headers are not allowed to be included with a 304 response
-            $headers = array(
-                "Allow",
-                "Content-Encoding",
-                "Content-Language",
-                "Content-Length",
-                "Content-MD5",
-                "Content-Type",
-                "Last-Modified"
-            );
-
-            foreach ($headers as $header) {
-                $this->unsetHeader($header);
-            }
-        }
-    }
-
-    /**
      * Prepares the response for being sent back to the client.
      * This is based off Symfony's HttpFoundation Response::prepare()
      * method and Slim's Response sending.
@@ -332,6 +252,59 @@ class Response extends MessageAbstract
     }
 
     /**
+     * Determines if the requested resource has been modified since the
+     * last request, allowing us to optimise the response. This is based
+     * off of Symfony\Component\HttpFoundation\Response::isNotModified().
+     *
+     * @param Request $request
+     */
+    public function checkForModifications(Request $request)
+    {
+        if (!$request->isSafeMethod()) {
+            return;
+        }
+
+        $notModified = false;
+        $lastModified = $this->getHeader("Last-Modified");
+        $modifiedSince = $request->getModifiedSince();
+
+        if (($eTags = $request->getETags())) {
+            $notModified = in_array($this->getHeader("ETag"), $eTags) || in_array("*", $eTags);
+        }
+
+        if ($modifiedSince && $lastModified) {
+            $notModified = strtotime($modifiedSince) >= strtotime($lastModified) && (!$eTags || $notModified);
+        }
+
+        if ($notModified) {
+            $this->setStatus(304);
+
+            // These headers are not allowed to be included with a 304 response
+            $headers = array(
+                "Allow",
+                "Content-Encoding",
+                "Content-Language",
+                "Content-Length",
+                "Content-MD5",
+                "Content-Type",
+                "Last-Modified"
+            );
+
+            foreach ($headers as $header) {
+                $this->unsetHeader($header);
+            }
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    public function isInformational()
+    {
+        return $this->status >= 100 && $this->status < 200;
+    }
+
+    /**
      * @return void
      */
     public function send()
@@ -367,6 +340,27 @@ class Response extends MessageAbstract
             return self::$messages[$status];
         } else {
             return null;
+        }
+    }
+
+    /**
+     * @return int
+     */
+    public function getStatus()
+    {
+        return $this->status;
+    }
+
+    /**
+     * @param int $status
+     * @throws \InvalidArgumentException
+     */
+    public function setStatus($status)
+    {
+        $this->status = (int)$status;
+
+        if ($this->status < 100 || $this->status > 600) {
+            throw new \InvalidArgumentException("HTTP Status $this->status is invalid!");
         }
     }
 }

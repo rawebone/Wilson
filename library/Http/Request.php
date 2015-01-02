@@ -122,11 +122,40 @@ class Request extends MessageAbstract
      */
     protected $files = array();
 
-    public function initialise(array $server, array $get, array $post,
-                                array $cookies, array $files, $input = "php://input")
+    public function mock($server = array(), $get = array(), $post = array(), $content = "")
     {
-		$this->request = array_merge($get, $post);
-        $this->files   = $files;
+        $defaults = array(
+            "REQUEST_METHOD" => "GET",
+            "REQUEST_URI" => "/",
+            "SCRIPT_NAME" => "/index.php",
+            "PATH_INFO" => "",
+            "QUERY_STRING" => "",
+            "SERVER_NAME" => "localhost",
+            "SERVER_PORT" => 80,
+            "SERVER_PROTOCOL" => "HTTP/1.1",
+            "ACCEPT" => "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "ACCEPT_LANGUAGE" => "en-US,en;q=0.8",
+            "ACCEPT_CHARSET" => "ISO-8859-1,utf-8;q=0.7,*;q=0.3",
+            "USER_AGENT" => "Wilson Framework",
+            "REMOTE_ADDR" => "127.0.0.1",
+            "HTTPS" => "off"
+        );
+
+        file_put_contents("php://memory", $content);
+
+        $this->initialise(array_merge($defaults, $server), $get, $post, array(), array(), "php://memory");
+    }
+
+    public function initialise(
+        array $server,
+        array $get,
+        array $post,
+        array $cookies,
+        array $files,
+        $input = "php://input"
+    ) {
+        $this->request = array_merge($get, $post);
+        $this->files = $files;
 
         $this->method = $server["REQUEST_METHOD"];
         $this->ip = $server["REMOTE_ADDR"];
@@ -135,8 +164,8 @@ class Request extends MessageAbstract
         $this->serverProtocol = $server["SERVER_PROTOCOL"];
 
         // Server params
-        $scriptName  = $server["SCRIPT_NAME"]; // <-- "/foo/index.php"
-        $requestUri  = $server["REQUEST_URI"]; // <-- "/foo/bar?test=abc" or "/foo/index.php/bar?test=abc"
+        $scriptName = $server["SCRIPT_NAME"]; // <-- "/foo/index.php"
+        $requestUri = $server["REQUEST_URI"]; // <-- "/foo/bar?test=abc" or "/foo/index.php/bar?test=abc"
         $queryString = isset($server["QUERY_STRING"]) ? $server["QUERY_STRING"] : ""; // <-- "test=abc" or ""
 
         // Physical path
@@ -171,48 +200,6 @@ class Request extends MessageAbstract
             $this->originalMethod = $this->method;
             $this->method = strtoupper($this->getHeader("HTTP_X_HTTP_METHOD_OVERRIDE"));
         }
-    }
-
-    public function mock($server = array(), $get = array(), $post = array(), $content = "")
-    {
-        $defaults = array(
-            "REQUEST_METHOD" => "GET",
-            "REQUEST_URI" => "/",
-            "SCRIPT_NAME" => "/index.php",
-            "PATH_INFO" => "",
-            "QUERY_STRING" => "",
-            "SERVER_NAME" => "localhost",
-            "SERVER_PORT" => 80,
-            "SERVER_PROTOCOL" => "HTTP/1.1",
-            "ACCEPT" => "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "ACCEPT_LANGUAGE" => "en-US,en;q=0.8",
-            "ACCEPT_CHARSET" => "ISO-8859-1,utf-8;q=0.7,*;q=0.3",
-            "USER_AGENT" => "Wilson Framework",
-            "REMOTE_ADDR" => "127.0.0.1",
-            "HTTPS" => "off"
-        );
-
-        file_put_contents("php://memory", $content);
-
-        $this->initialise(array_merge($defaults, $server), $get, $post, array(), array(), "php://memory");
-    }
-
-    /**
-     * @return string
-     */
-    public function getMethod()
-    {
-        return $this->method;
-    }
-
-    /**
-     * Returns a string if a method override has been used.
-     *
-     * @return null|string
-     */
-    public function getOriginalMethod()
-    {
-        return $this->originalMethod;
     }
 
     /**
@@ -256,6 +243,14 @@ class Request extends MessageAbstract
     }
 
     /**
+     * @return string
+     */
+    public function getProtocol()
+    {
+        return $this->serverProtocol;
+    }
+
+    /**
      * @return bool
      */
     public function isSafeMethod()
@@ -280,30 +275,17 @@ class Request extends MessageAbstract
         return $this->getHeader("HTTP_USER_AGENT", "");
     }
 
-	/**
-	 * Returns a request parameter, or the default.
-	 *
-	 * @param string $key
-	 * @param mixed $default
-	 * @return mixed
-	 */
-	public function getParam($key, $default = null)
-	{
-		return isset($this->request[$key]) ? $this->request[$key] : $default;
-	}
-
-	/**
-	 * Sets a request parameter, if the value is null then the parameter will
-	 * be unset.
-	 *
-	 * @param string $key
-	 * @param mixed $value
-	 * @return void
-	 */
-	public function setParam($key, $value)
-	{
-		$this->request[$key] = $value;
-	}
+    /**
+     * Returns a request parameter, or the default.
+     *
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
+    public function getParam($key, $default = null)
+    {
+        return isset($this->request[$key]) ? $this->request[$key] : $default;
+    }
 
     /**
      * @param string $key
@@ -314,25 +296,38 @@ class Request extends MessageAbstract
         unset($this->request[$key]);
     }
 
-	/**
-	 * @return array
-	 */
-	public function getParams()
-	{
-		return $this->request;
-	}
+    /**
+     * @return array
+     */
+    public function getParams()
+    {
+        return $this->request;
+    }
 
-	/**
-	 * @param array $params
-	 * @return void
-	 * @see setParam
-	 */
-	public function setParams(array $params)
-	{
-		foreach ($params as $key => $value) {
-			$this->setParam($key, $value);
-		}
-	}
+    /**
+     * @param array $params
+     * @return void
+     * @see setParam
+     */
+    public function setParams(array $params)
+    {
+        foreach ($params as $key => $value) {
+            $this->setParam($key, $value);
+        }
+    }
+
+    /**
+     * Sets a request parameter, if the value is null then the parameter will
+     * be unset.
+     *
+     * @param string $key
+     * @param mixed $value
+     * @return void
+     */
+    public function setParam($key, $value)
+    {
+        $this->request[$key] = $value;
+    }
 
     /**
      * Returns any files associated with the request. This is a copy of
@@ -352,26 +347,26 @@ class Request extends MessageAbstract
     {
         $method = $this->getOriginalMethod() ?: $this->getMethod();
 
-        return ($method === "POST" && is_null($this->getContentType())) || in_array($this->getMediaType(), self::$formDataMediaTypes);
+        return ($method === "POST" && is_null($this->getContentType())) || in_array($this->getMediaType(),
+            self::$formDataMediaTypes);
     }
 
     /**
-     * Returns an array of ETags sent with the Request.
+     * Returns a string if a method override has been used.
      *
-     * @see Symfony\Component\HttpFoundation\Request::getETags
-     * @return array
+     * @return null|string
      */
-    public function getETags()
+    public function getOriginalMethod()
     {
-        return preg_split('/\s*,\s*/', $this->getHeader("HTTP_IF_NONE_MATCH"), null, PREG_SPLIT_NO_EMPTY);
+        return $this->originalMethod;
     }
 
     /**
-     * @return string|null
+     * @return string
      */
-    public function getModifiedSince()
+    public function getMethod()
     {
-        return $this->getHeader("HTTP_IF_MODIFIED_SINCE");
+        return $this->method;
     }
 
     /**
@@ -399,6 +394,38 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns an array of ETags sent with the Request.
+     *
+     * @see Symfony\Component\HttpFoundation\Request::getETags
+     * @return array
+     */
+    public function getETags()
+    {
+        return preg_split('/\s*,\s*/', $this->getHeader("HTTP_IF_NONE_MATCH"), null, PREG_SPLIT_NO_EMPTY);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getModifiedSince()
+    {
+        return $this->getHeader("HTTP_IF_MODIFIED_SINCE");
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getContentCharset()
+    {
+        $mediaTypeParams = $this->getMediaTypeParams();
+        if (isset($mediaTypeParams["charset"])) {
+            return $mediaTypeParams["charset"];
+        }
+
+        return null;
+    }
+
+    /**
      * @return array
      */
     public function getMediaTypeParams()
@@ -418,19 +445,6 @@ class Request extends MessageAbstract
     }
 
     /**
-     * @return string|null
-     */
-    public function getContentCharset()
-    {
-        $mediaTypeParams = $this->getMediaTypeParams();
-        if (isset($mediaTypeParams["charset"])) {
-            return $mediaTypeParams["charset"];
-        }
-
-        return null;
-    }
-
-    /**
      * @return int
      */
     public function getContentLength()
@@ -441,9 +455,9 @@ class Request extends MessageAbstract
     /**
      * @return string
      */
-    public function getProtocol()
+    public function getHostWithPort()
     {
-        return $this->serverProtocol;
+        return sprintf("%s:%s", $this->getHost(), $this->getPort());
     }
 
     /**
@@ -465,35 +479,11 @@ class Request extends MessageAbstract
     }
 
     /**
-     * @return string
-     */
-    public function getHostWithPort()
-    {
-        return sprintf("%s:%s", $this->getHost(), $this->getPort());
-    }
-
-    /**
      * @return int
      */
     public function getPort()
     {
         return (int)$this->serverPort;
-    }
-
-    /**
-     * @return string
-     */
-    public function getScheme()
-    {
-        return $this->scheme;
-    }
-
-    /**
-     * @return string
-     */
-    public function getPhysicalPath()
-    {
-        return $this->physicalPath;
     }
 
     /**
@@ -503,6 +493,14 @@ class Request extends MessageAbstract
     public function getPath()
     {
         return $this->getPhysicalPath() . $this->getPathInfo();
+    }
+
+    /**
+     * @return string
+     */
+    public function getPhysicalPath()
+    {
+        return $this->physicalPath;
     }
 
     /**
@@ -530,16 +528,26 @@ class Request extends MessageAbstract
     /**
      * @return string
      */
+    public function getScheme()
+    {
+        return $this->scheme;
+    }
+
+    /**
+     * @return string
+     */
     public function getIp()
     {
         if ($this->hasHeader("HTTP_X_FORWARDED_FOR")) {
             return $this->getHeader("HTTP_X_FORWARDED_FOR");
 
-        } else if ($this->hasHeader("HTTP_CLIENT_IP")) {
-            return $this->getHeader("HTTP_CLIENT_IP");
-
         } else {
-            return $this->ip;
+            if ($this->hasHeader("HTTP_CLIENT_IP")) {
+                return $this->getHeader("HTTP_CLIENT_IP");
+
+            } else {
+                return $this->ip;
+            }
         }
     }
 }
