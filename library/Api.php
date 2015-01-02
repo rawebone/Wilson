@@ -136,6 +136,51 @@ class Api
     }
 
     /**
+     * Provides a minimal default error response, emitting a HTTP Status 500
+     * and writing the exception to the User Agent.
+     *
+     * @param Request $req
+     * @param Response $resp
+     * @param Services $s
+     * @param Exception $e
+     * @return void
+     */
+    public function defaultError(Request $req, Response $resp, Services $s, Exception $e)
+    {
+        $resp->setStatus(500);
+        $resp->setHeader("Content-Type", "text/html");
+        $resp->setBody("<pre>$e</pre>");
+    }
+
+    /**
+     * Provides a minimal default not found response, emitting a HTTP Status 404
+     * and writing "Not Found" to the User Agent.
+     *
+     * @param Request $req
+     * @param Response $resp
+     * @param Services $s
+     * @return void
+     */
+    public function defaultNotFound(Request $req, Response $resp, Services $s)
+    {
+        $resp->setStatus(404);
+        $resp->setHeader("Content-Type", "text/html");
+        $resp->setBody("<b>Not Found</b>");
+    }
+
+    /**
+     * Placeholder prepare function.
+     *
+     * @param Request $request
+     * @param Response $response
+     * @return void
+     */
+    public function defaultPrepare(Request $request, Response $response)
+    {
+
+    }
+
+    /**
      * Dispatches the request and, if the Api is not under test, sends the
      * response back to the User Agent.
      *
@@ -182,7 +227,7 @@ class Api
      * @param Response $response
      * @return void
      */
-    public function routeRequest(Router $router, Request $request, Response $response)
+    protected function routeRequest(Router $router, Request $request, Response $response)
     {
         $match = $router->match(
             $this->resources,
@@ -227,50 +272,5 @@ class Api
                 }
                 break;
         }
-    }
-
-    /**
-     * Provides a minimal default error response, emitting a HTTP Status 500
-     * and writing the exception to the User Agent.
-     *
-     * @param Request $req
-     * @param Response $resp
-     * @param Services $s
-     * @param Exception $e
-     * @return void
-     */
-    public function defaultError(Request $req, Response $resp, Services $s, Exception $e)
-    {
-        $resp->setStatus(500);
-        $resp->setHeader("Content-Type", "text/html");
-        $resp->setBody("<pre>$e</pre>");
-    }
-
-    /**
-     * Provides a minimal default not found response, emitting a HTTP Status 404
-     * and writing "Not Found" to the User Agent.
-     *
-     * @param Request $req
-     * @param Response $resp
-     * @param Services $s
-     * @return void
-     */
-    public function defaultNotFound(Request $req, Response $resp, Services $s)
-    {
-        $resp->setStatus(404);
-        $resp->setHeader("Content-Type", "text/html");
-        $resp->setBody("<b>Not Found</b>");
-    }
-
-    /**
-     * Placeholder prepare function.
-     *
-     * @param Request $request
-     * @param Response $response
-     * @return void
-     */
-    public function defaultPrepare(Request $request, Response $response)
-    {
-
     }
 }
