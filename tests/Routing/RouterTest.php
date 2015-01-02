@@ -136,6 +136,7 @@ ANNOTATION;
 
 		$this->assertEquals(Router::FOUND, $match->status, "Match");
 		$this->assertEquals(array(array($resource, "test1")), $match->handlers, "Handlers");
+		$this->assertEquals(array(), $match->params, "Parameters");
 	}
 
 	function testDynamicMatch()

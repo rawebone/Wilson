@@ -90,6 +90,7 @@ class Router
         // Find the correct handler
         if (isset($table["static"][$uri])) {
             $handler = $table["static"][$uri];
+            $route->params = array();
 
         } else {
             foreach ($table["dynamic"] as $expr => $handlers) {
