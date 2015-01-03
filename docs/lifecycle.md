@@ -260,7 +260,7 @@ framework exposes a slot to handle this event:
 
 ```php
 
-$api->error = function (Request $req, Response $resp, Services $s, Exception $e)
+$api->error = function (Request $request, Response $response, Services $services, Exception $exception)
 {
     // ...
 };
