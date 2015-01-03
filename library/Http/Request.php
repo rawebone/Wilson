@@ -146,7 +146,14 @@ class Request extends MessageAbstract
      */
     protected $files = array();
 
-    public function mock($server = array(), $get = array(), $post = array(), $content = "")
+    /**
+     * $_COOKIES superglobal
+     *
+     * @var array
+     */
+    protected $cookies = array();
+
+    public function mock($server = array(), $get = array(), $post = array(), $cookies = array(), $files = array(), $content = "")
     {
         $defaults = array(
             "REQUEST_METHOD" => "GET",
@@ -167,7 +174,7 @@ class Request extends MessageAbstract
 
         file_put_contents("php://memory", $content);
 
-        $this->initialise(array_merge($defaults, $server), $get, $post, array(), array(), "php://memory");
+        $this->initialise(array_merge($defaults, $server), $get, $post, $cookies, $files, "php://memory");
     }
 
     public function initialise(
@@ -179,6 +186,7 @@ class Request extends MessageAbstract
         $input = "php://input"
     ) {
         $this->request = array_merge($get, $post);
+        $this->cookies = $cookies;
         $this->files = $files;
 
         $this->method = $server["REQUEST_METHOD"];
@@ -263,7 +271,7 @@ class Request extends MessageAbstract
      */
     public function isSecure()
     {
-        return $this->getProtocol() === "https";
+        return $this->getScheme() === "https";
     }
 
     /**
@@ -362,6 +370,17 @@ class Request extends MessageAbstract
     public function getFiles()
     {
         return $this->files;
+    }
+
+    /**
+     * Returns any cookies associated with the request. This is a copy of
+     * the $_COOKIES superglobal.
+     *
+     * @return array
+     */
+    public function getCookies()
+    {
+        return $this->cookies;
     }
 
     /**

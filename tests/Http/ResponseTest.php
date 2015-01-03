@@ -20,19 +20,19 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $resp = new Response();
 
         $resp->setStatus(100);
-        $this->assertEquals(true, $resp->isInformational());
+        $this->assertTrue($resp->isInformational());
 
         $resp->setStatus(200);
-        $this->assertEquals(true, $resp->isOk());
-        $this->assertEquals(true, $resp->isSuccess());
+        $this->assertTrue($resp->isOk());
+        $this->assertTrue($resp->isSuccess());
 
         $resp->setStatus(300);
-        $this->assertEquals(true, $resp->isRedirection());
+        $this->assertTrue($resp->isRedirection());
 
         $resp->setStatus(400);
-        $this->assertEquals(true, $resp->isClientError());
+        $this->assertTrue($resp->isClientError());
 
         $resp->setStatus(500);
-        $this->assertEquals(true, $resp->isServerError());
+        $this->assertTrue($resp->isServerError());
     }
 }
