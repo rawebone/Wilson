@@ -35,4 +35,59 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $resp->setStatus(500);
         $this->assertTrue($resp->isServerError());
     }
+
+    function testSetRedirect()
+    {
+        $url = "blah.com";
+
+        $resp = new Response();
+        $resp->setRedirect($url);
+
+        $this->assertEquals($url, $resp->getHeader("Location"));
+        $this->assertEquals(302, $resp->getStatus());
+
+        $resp->setRedirect($url, 200);
+        $this->assertEquals(200, $resp->getStatus());
+    }
+
+    function testSetExpires()
+    {
+        $resp = new Response();
+        $resp->setExpires(null);
+
+        $this->assertNull($resp->getHeader("Expires"));
+
+        $now = new \DateTime();
+        $resp->setExpires($now);
+
+        $this->assertEquals(strtotime($resp->getHeader("Expires")), $now->getTimestamp());
+    }
+
+    function testSetLastModified()
+    {
+        $resp = new Response();
+        $resp->setLastModified(null);
+
+        $this->assertNull($resp->getHeader("Last-Modified"));
+
+        $now = new \DateTime();
+        $resp->setLastModified($now);
+
+        $this->assertEquals(strtotime($resp->getHeader("Last-Modified")), $now->getTimestamp());
+    }
+
+    function testSetETag()
+    {
+        $resp = new Response();
+
+        $resp->setHeader("ETag", "abcc");
+        $resp->setETag(null);
+        $this->assertNull($resp->getHeader("ETag"));
+
+        $resp->setETag("abc");
+        $this->assertEquals('"abc"', $resp->getHeader("ETag"));
+
+        $resp->setETag("abc", true);
+        $this->assertEquals('W/"abc"', $resp->getHeader("ETag"));
+    }
 }

@@ -185,7 +185,7 @@ class Response extends MessageAbstract
      * @param int $status
      * @return void
      */
-    public function setRedirect($url, $status)
+    public function setRedirect($url, $status = 302)
     {
         $this->setStatus($status);
         $this->setHeader("Location", $url);
@@ -219,7 +219,7 @@ class Response extends MessageAbstract
         } else {
             $date = clone $date;
             $date->setTimezone(new \DateTimeZone("UTC"));
-            $this->setHeaders("Last-Modified", $date->format("D, d M Y H:i:s T"));
+            $this->setHeader("Last-Modified", $date->format("D, d M Y H:i:s T"));
         }
     }
 
