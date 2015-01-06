@@ -350,7 +350,7 @@ class Response extends MessageAbstract
         }
 
         $body = $this->getBody();
-        if ($body instanceof \Closure) {
+        if (is_callable($body)) {
             call_user_func($body);
 
         } else {

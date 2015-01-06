@@ -37,6 +37,18 @@ class MessageAbstractTest extends \PHPUnit_Framework_TestCase
         $msg = new Message();
         $msg->setBody($a = "abc");
         $this->assertEquals($a, $msg->getBody());
+
+        $msg->setBody($b = function () {});
+        $this->assertEquals($b, $msg->getBody());
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    function testInvalidSetBody()
+    {
+        $msg = new Message();
+        $msg->setBody(1323);
     }
 }
 

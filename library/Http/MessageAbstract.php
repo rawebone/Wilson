@@ -55,7 +55,7 @@ namespace Wilson\Http;
 abstract class MessageAbstract
 {
     /**
-     * @var string|\Closure
+     * @var string|callable
      */
     private $body = "";
 
@@ -123,7 +123,7 @@ abstract class MessageAbstract
     }
 
     /**
-     * @return string|\Closure
+     * @return string|callable
      */
     public function getBody()
     {
@@ -131,11 +131,15 @@ abstract class MessageAbstract
     }
 
     /**
-     * @param string|\Closure $content
+     * @param string|callable $content
      * @return void
      */
     public function setBody($content)
     {
+        if (!is_callable($content) && !is_string($content)) {
+            throw new \InvalidArgumentException("Message body is expected to be a string or a callable");
+        }
+
         $this->body = $content;
     }
 }
