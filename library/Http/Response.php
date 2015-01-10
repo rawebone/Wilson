@@ -349,6 +349,14 @@ class Response extends MessageAbstract
             }
         }
 
+        $this->sendContent();
+    }
+
+    /**
+     * @return void
+     */
+    public function sendContent()
+    {
         $body = $this->getBody();
         if (is_callable($body)) {
             call_user_func($body);

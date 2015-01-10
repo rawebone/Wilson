@@ -90,4 +90,24 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $resp->setETag("abc", true);
         $this->assertEquals('W/"abc"', $resp->getHeader("ETag"));
     }
+
+    function testSendContentViaCallable()
+    {
+        $resp = new Response();
+        $resp->setBody(function () { echo "Hello"; });
+
+        ob_start();
+        $resp->sendContent();
+        $this->assertEquals("Hello", ob_get_clean());
+    }
+
+    function testSendContentViaString()
+    {
+        $resp = new Response();
+        $resp->setBody("Hello");
+
+        ob_start();
+        $resp->sendContent();
+        $this->assertEquals("Hello", ob_get_clean());
+    }
 }
