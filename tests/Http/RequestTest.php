@@ -91,7 +91,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($cookies, $req->getCookies());
     }
 
-    public function testGetUrl()
+    function testGetUrl()
     {
         $req = new Request();
         $req->mock(array(
@@ -103,7 +103,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("http://wilson.com", $req->getUrl());
     }
 
-    public function testGetUrlWithCustomPort()
+    function testGetUrlWithCustomPort()
     {
         $req = new Request();
         $req->mock(array(
@@ -115,7 +115,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("http://wilson.com:8001", $req->getUrl());
     }
 
-    public function testGetUrlWithHttps()
+    function testGetUrlWithHttps()
     {
         $req = new Request();
         $req->mock(array(
@@ -128,7 +128,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("https://wilson.com", $req->getUrl());
     }
 
-    public function testGetUrlWithHttpsAndCustomPort()
+    function testGetUrlWithHttpsAndCustomPort()
     {
         $req = new Request();
         $req->mock(array(
@@ -139,5 +139,81 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         ));
 
         $this->assertEquals("https://wilson.com:444", $req->getUrl());
+    }
+
+    function testIpFromForward()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "HTTP_X_FORWARDED_FOR" => "192.1.1.1"
+        ));
+
+        $this->assertEquals("192.1.1.1", $req->getIp());
+    }
+
+    function testIpFromClient()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "HTTP_CLIENT_IP" => "192.1.1.1"
+        ));
+
+        $this->assertEquals("192.1.1.1", $req->getIp());
+    }
+
+    function testIpFromRemote()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "REMOTE_ADDR" => "192.1.1.1"
+        ));
+
+        $this->assertEquals("192.1.1.1", $req->getIp());
+    }
+
+    function testGetMediaTypeWhenExists()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "HTTP_CONTENT_TYPE" => "application/json;charset=utf-8"
+        ));
+
+        $this->assertEquals("application/json", $req->getMediaType());
+    }
+
+    function testGetMediaTypeWhenNotExists()
+    {
+        $req = new Request();
+        $this->assertNull($req->getMediaType());
+    }
+
+    function testGetMediaTypeWhenNoParamsExist()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "HTTP_CONTENT_TYPE" => "application/json"
+        ));
+
+        $this->assertEquals("application/json", $req->getMediaType());
+    }
+
+    function testGetHostFromHeader()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "HTTP_HOST" => "abc.123.com:80"
+        ));
+
+        $this->assertEquals("abc.123.com", $req->getHost());
+    }
+
+    function testGetHostFromServer()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "SERVER_NAME" => "abc.123.com"
+        ));
+
+        $this->assertEquals("abc.123.com", $req->getHost());
     }
 }

@@ -426,14 +426,13 @@ class Request extends MessageAbstract
 
     /**
      * Get Media Type (type/subtype within Content Type header)
+     *
      * @return string|null
      */
     public function getMediaType()
     {
-        $contentType = $this->getContentType();
-        if ($contentType) {
+        if (($contentType = $this->getContentType())) {
             $contentTypeParts = preg_split("/\\s*[;,]\\s*/", $contentType);
-
             return strtolower($contentTypeParts[0]);
         }
 
@@ -512,14 +511,9 @@ class Request extends MessageAbstract
      */
     public function getHost()
     {
-        if ($this->hasHeader("HTTP_HOST")) {
-            $host = $this->getHeader("HTTP_HOST");
-            if (strpos($host, ":") !== false) {
-                $hostParts = explode(":", $host);
-                $host = $hostParts[0];
-            }
-
-            return $host;
+        if (($host = $this->getHeader("HTTP_HOST"))) {
+            $pos = strpos($host, ":");
+            return ($pos !== false ? substr($host, 0, $pos) : $host);
         }
 
         return $this->serverName;
@@ -584,16 +578,14 @@ class Request extends MessageAbstract
      */
     public function getIp()
     {
-        if ($this->hasHeader("HTTP_X_FORWARDED_FOR")) {
-            return $this->getHeader("HTTP_X_FORWARDED_FOR");
+        if (($forwarded = $this->getHeader("HTTP_X_FORWARDED_FOR"))) {
+            return $forwarded;
+
+        } else if (($client = $this->getHeader("HTTP_CLIENT_IP"))) {
+            return $client;
 
         } else {
-            if ($this->hasHeader("HTTP_CLIENT_IP")) {
-                return $this->getHeader("HTTP_CLIENT_IP");
-
-            } else {
-                return $this->ip;
-            }
+            return $this->ip;
         }
     }
 }
