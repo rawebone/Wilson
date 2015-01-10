@@ -26,21 +26,16 @@ class ServicesTest extends \PHPUnit_Framework_TestCase
 	function testInitialisation()
 	{
 		$service = new TestContainer();
-
-		$request = new Request();
-		$response = new Response($request);
-
-		$service->initialise($request, $response);
+		$service->initialise(new Request(), new Response());
 
 		$this->assertEquals(true, $service->valid);
 	}
 
 	function testSingletons()
 	{
-		$service = new TestContainer();
-
-		$request = new Request();
-		$response = new Response($request);
+		$service  = new TestContainer();
+		$request  = new Request();
+		$response = new Response();
 
 		$service->initialise($request, $response);
 
@@ -50,6 +45,16 @@ class ServicesTest extends \PHPUnit_Framework_TestCase
 		$service->initialise($request, $response);
 
 		$this->assertEquals(2, $service->static);
+	}
+
+	/**
+	 * @expectedException \ErrorException
+	 */
+	function testThrowsException()
+	{
+		$service = new TestContainer();
+		$service->initialise(new Request(), new Response());
+		$service->nonExistant;
 	}
 }
 
