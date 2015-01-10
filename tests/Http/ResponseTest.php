@@ -11,6 +11,7 @@
 
 namespace Wilson\Tests\Http;
 
+use Wilson\Http\Request;
 use Wilson\Http\Response;
 
 class ResponseTest extends \PHPUnit_Framework_TestCase
@@ -34,6 +35,30 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
 
         $resp->setStatus(500);
         $this->assertTrue($resp->isServerError());
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    function testSetStatusBelow100()
+    {
+        $resp = new Response();
+        $resp->setStatus(99);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    function testSetStatusAbove600()
+    {
+        $resp = new Response();
+        $resp->setStatus(601);
+    }
+
+    function testGetMessage()
+    {
+        $this->assertEquals("200 OK", Response::getMessageForCode(200));
+        $this->assertNull(Response::getMessageForCode(99));
     }
 
     function testSetRedirect()
@@ -109,5 +134,16 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         ob_start();
         $resp->sendContent();
         $this->assertEquals("Hello", ob_get_clean());
+    }
+
+    function testCheckForModificationsWithNonSafeMethod()
+    {
+        $request = new Request();
+        $request->mock(array(
+            "REQUEST_METHOD" => "POST"
+        ));
+
+        $response = new Response();
+        $this->assertNull($response->checkForModifications($request));
     }
 }
