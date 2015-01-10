@@ -562,13 +562,9 @@ class Request extends MessageAbstract
     {
         $scheme = $this->getScheme();
         $port   = $this->getPort();
+        $ports  = array("http"  => 80, "https" => 443);
 
-        $url = $scheme . "://" . $this->getHost();
-        if (($scheme === "https" && $port !== 443) || ($scheme === "http" && $port !== 80)) {
-            $url .= sprintf(":%s", $port);
-        }
-
-        return $url;
+        return $scheme . "://" . $this->getHost() . ($ports[$scheme] !== $port ? ":$port" : "");
     }
 
     /**
