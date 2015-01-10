@@ -82,6 +82,7 @@ class Router
     {
         $route = new \stdClass();
         $route->status = Router::NOT_FOUND;
+        $route->params = array();
 
         $handler = null;
         $urlTools = $this->urlTools;
@@ -90,13 +91,11 @@ class Router
         // Find the correct handler
         if (isset($table["static"][$uri])) {
             $handler = $table["static"][$uri];
-            $route->params = array();
 
         } else {
             foreach ($table["dynamic"] as $expr => $handlers) {
-                if ($urlTools->match($expr, $uri)) {
+                if ($urlTools->match($expr, $uri, $route->params)) {
                     $handler = $handlers;
-                    $route->params = $urlTools->parameters($expr, $uri);
                     break;
                 }
             }

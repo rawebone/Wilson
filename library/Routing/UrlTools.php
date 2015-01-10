@@ -53,32 +53,23 @@ class UrlTools
      *
      * @param string $regex
      * @param string $queryString
+     * @param array $params
      * @return boolean
      */
-    public function match($regex, $queryString)
+    public function match($regex, $queryString, array &$params)
     {
-        return preg_match($regex, rawurldecode($queryString)) === 1;
-    }
+        if (preg_match($regex, rawurldecode($queryString), $matches) !== 1) {
+            return false;
+        }
 
-    /**
-     * Returns an array of the parameters from a query string based on
-     * the compiled regex.
-     *
-     * @param string $regex
-     * @param string $queryString
-     * @return array
-     */
-    public function parameters($regex, $queryString)
-    {
-        preg_match($regex, rawurldecode($queryString), $matches);
-
-        $params = array();
-        foreach ($matches as $key => $value) {
-            if (is_string($key)) {
-                $params[$key] = $value;
+        if ($matches) {
+            foreach ($matches as $key => $value) {
+                if (is_string($key)) {
+                    $params[$key] = $value;
+                }
             }
         }
 
-        return $params;
+        return true;
     }
 }
