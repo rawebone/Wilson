@@ -38,8 +38,8 @@ class UrlToolsTest extends \PHPUnit_Framework_TestCase
 	{
 		$ut = new UrlTools();
 		$a  = array();
-		$this->assertEquals(false, $ut->match("#^/url/([345])/junk$#", "/url/123/junk", $a));
-		$this->assertEquals(true, $ut->match("#^/url/([123]+)/junk$#", "/url/123/junk", $a));
+		$this->assertFalse($ut->match("#^/url/([345])/junk$#", "/url/123/junk", $a));
+		$this->assertTrue($ut->match("#^/url/([123]+)/junk$#", "/url/123/junk", $a));
 	}
 
 	public function testMatchWithParameters()
@@ -47,7 +47,7 @@ class UrlToolsTest extends \PHPUnit_Framework_TestCase
 		$ut = new UrlTools();
 		$a  = array();
 
-		$this->assertEquals(true, $ut->match("#^/url/(?<id>[123]+)/junk$#", "/url/123/junk", $a));
+		$this->assertTrue($ut->match("#^/url/(?<id>[123]+)/junk$#", "/url/123/junk", $a));
 		$this->assertEquals(array("id" => "123"), $a);
 	}
 }
