@@ -33,7 +33,7 @@ class Api
      * The signature of the callable is:
      *
      * <code>
-     * function (Request $req, Response $resp, Services $s, Exception $e) {}
+     * function (Request $request, Response $response, Services $services, Exception $exception) {}
      * </code>
      *
      * @see defaultError
@@ -46,7 +46,7 @@ class Api
      * to a route. The signature of the callable is:
      *
      * <code>
-     * function (Request $req, Response $resp, Services $s) {}
+     * function (Request $request, Response $response, Services $services) {}
      * </code>
      *
      * @see defaultNotFound
@@ -112,8 +112,8 @@ class Api
     public function __construct()
     {
         $this->services = new Services();
-        $this->prepare  = array($this, "defaultPrepare");
-        $this->error    = array($this, "defaultError");
+        $this->prepare = array($this, "defaultPrepare");
+        $this->error = array($this, "defaultError");
         $this->notFound = array($this, "defaultNotFound");
     }
 
@@ -128,7 +128,7 @@ class Api
      */
     public function createCache()
     {
-        $cache  = new Cache($this->cacheFile);
+        $cache = new Cache($this->cacheFile);
         $router = new Router($cache, new UrlTools());
 
         $table = $router->getRoutingTable($this->resources);
@@ -139,33 +139,33 @@ class Api
      * Provides a minimal default error response, emitting a HTTP Status 500
      * and writing the exception to the User Agent.
      *
-     * @param Request $req
-     * @param Response $resp
-     * @param Services $s
-     * @param Exception $e
+     * @param Request $request
+     * @param Response $response
+     * @param Services $services
+     * @param Exception $exception
      * @return void
      */
-    public function defaultError(Request $req, Response $resp, Services $s, Exception $e)
+    public function defaultError(Request $request, Response $response, Services $services, Exception $exception)
     {
-        $resp->setStatus(500);
-        $resp->setHeader("Content-Type", "text/html");
-        $resp->setBody("<pre>$e</pre>");
+        $response->setStatus(500);
+        $response->setHeader("Content-Type", "text/html");
+        $response->setBody("<pre>$exception</pre>");
     }
 
     /**
      * Provides a minimal default not found response, emitting a HTTP Status 404
      * and writing "Not Found" to the User Agent.
      *
-     * @param Request $req
-     * @param Response $resp
+     * @param Request $request
+     * @param Response $response
      * @param Services $s
      * @return void
      */
-    public function defaultNotFound(Request $req, Response $resp, Services $s)
+    public function defaultNotFound(Request $request, Response $response)
     {
-        $resp->setStatus(404);
-        $resp->setHeader("Content-Type", "text/html");
-        $resp->setBody("<b>Not Found</b>");
+        $response->setStatus(404);
+        $response->setHeader("Content-Type", "text/html");
+        $response->setBody("<b>Not Found</b>");
     }
 
     /**
@@ -175,7 +175,7 @@ class Api
      * @param Response $response
      * @return void
      */
-    public function defaultPrepare(Request $request, Response $response)
+    public function defaultPrepare()
     {
 
     }
@@ -199,7 +199,7 @@ class Api
             $response = new Response();
         }
 
-        $cache  = new Cache($this->cacheFile);
+        $cache = new Cache($this->cacheFile);
         $router = new Router($cache, new UrlTools());
 
         try {
