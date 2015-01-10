@@ -1,6 +1,13 @@
 # Wilson
 
-[![Build Status](https://secure.travis-ci.org/rawebone/Wilson.png?branch=perf)](http://travis-ci.org/rawebone/Wilson)
+[![Author](http://img.shields.io/badge/author-@rawebone-blue.svg?style=flat-square)](https://twitter.com/rawebone)
+[![Latest Version](https://img.shields.io/github/release/rawebone/Wilson.svg?style=flat-square)](https://github.com/rawebone/Wilson/releases)
+[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
+[![Build Status](https://img.shields.io/travis/rawebone/Wilson/master.svg?style=flat-square)](https://travis-ci.org/rawebone/Wilson)
+[![HHVM Status](https://img.shields.io/hhvm/rawebone/wilson.svg?style=flat-square)](http://hhvm.h4cc.de/package/rawebone/wilson)
+[![Coverage Status](https://img.shields.io/scrutinizer/coverage/g/rawebone/Wilson.svg?style=flat-square)](https://scrutinizer-ci.com/g/rawebone/Wilson/code-structure)
+[![Quality Score](https://img.shields.io/scrutinizer/g/rawebone/Wilson.svg?style=flat-square)](https://scrutinizer-ci.com/g/rawebone/Wilson)
+[![Total Downloads](https://img.shields.io/packagist/dt/league/period.svg?style=flat-square)](https://packagist.org/packages/league/period)
 
 Wilson is a PHP Micro framework aimed at providing methodologies associated with
 full stack frameworks without the performance penalties, those being:
