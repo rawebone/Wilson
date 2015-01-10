@@ -37,28 +37,17 @@ class UrlToolsTest extends \PHPUnit_Framework_TestCase
 	public function testMatch()
 	{
 		$ut = new UrlTools();
-		$this->assertEquals(false, $ut->match("#^/url/([345])/junk$#", "/url/123/junk"));
-		$this->assertEquals(true, $ut->match("#^/url/([123]+)/junk$#", "/url/123/junk"));
+		$a  = array();
+		$this->assertEquals(false, $ut->match("#^/url/([345])/junk$#", "/url/123/junk", $a));
+		$this->assertEquals(true, $ut->match("#^/url/([123]+)/junk$#", "/url/123/junk", $a));
 	}
 
-	public function testParametersNoMatches()
+	public function testMatchWithParameters()
 	{
 		$ut = new UrlTools();
-		$this->assertEquals(array(), $ut->parameters("#^/url/([345])/junk$#", "/url/123/junk"));
-	}
+		$a  = array();
 
-	public function testParametersMatches()
-	{
-		$ut = new UrlTools();
-
-		$regex = "#^/not-a-match/(?<id>\\d+)/(?<name>[^/]+)/junk$#";
-		$url = "/not-a-match/123/barry/junk";
-
-		$params = array(
-			"id" => "123",
-			"name" => "barry"
-		);
-
-		$this->assertEquals($params, $ut->parameters($regex, $url));
+		$this->assertEquals(true, $ut->match("#^/url/(?<id>[123]+)/junk$#", "/url/123/junk", $a));
+		$this->assertEquals(array("id" => "123"), $a);
 	}
 }
