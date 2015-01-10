@@ -158,7 +158,6 @@ class Api
      *
      * @param Request $request
      * @param Response $response
-     * @param Services $s
      * @return void
      */
     public function defaultNotFound(Request $request, Response $response)
@@ -171,8 +170,6 @@ class Api
     /**
      * Placeholder prepare function.
      *
-     * @param Request $request
-     * @param Response $response
      * @return void
      */
     public function defaultPrepare()
