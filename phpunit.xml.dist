@@ -10,6 +10,7 @@
         processIsolation="false"
         stopOnError="true"
         stopOnFailure="true"
+        backupGlobals="true"
         strict="false"
         verbose="false"
         bootstrap="vendor/autoload.php">
