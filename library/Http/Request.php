@@ -188,14 +188,8 @@ class Request extends MessageAbstract
         $this->request = array_merge($get, $post);
         $this->cookies = $cookies;
         $this->files = $files;
-        $this->scheme = empty($server["HTTPS"]) || $server["HTTPS"] === "off" ? "http" : "https";
 
-        $this->method = $server["REQUEST_METHOD"];
-        $this->ip = $server["REMOTE_ADDR"];
-        $this->serverName = $server["SERVER_NAME"];
-        $this->serverPort = $server["SERVER_PORT"];
-        $this->serverProtocol = $server["SERVER_PROTOCOL"];
-
+        $this->buildServerInfo($server);
         $this->buildPaths($server);
         $this->setHeaders($server);
 
@@ -203,10 +197,23 @@ class Request extends MessageAbstract
         $this->content = ($content = @file_get_contents($input)) ? $content : "";
 
         // Method Override
-        if ($this->hasHeader("HTTP_X_HTTP_METHOD_OVERRIDE")) {
+        if (($original = $this->getHeader("HTTP_X_HTTP_METHOD_OVERRIDE"))) {
             $this->originalMethod = $this->method;
-            $this->method = strtoupper($this->getHeader("HTTP_X_HTTP_METHOD_OVERRIDE"));
+            $this->method = strtoupper($original);
         }
+    }
+
+    /**
+     * @param array $server
+     */
+    protected function buildServerInfo(array $server)
+    {
+        $this->method = $server["REQUEST_METHOD"];
+        $this->ip = $server["REMOTE_ADDR"];
+        $this->serverName = $server["SERVER_NAME"];
+        $this->serverPort = $server["SERVER_PORT"];
+        $this->serverProtocol = $server["SERVER_PROTOCOL"];
+        $this->scheme = empty($server["HTTPS"]) || $server["HTTPS"] === "off" ? "http" : "https";
     }
 
     /**
