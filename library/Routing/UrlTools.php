@@ -58,18 +58,29 @@ class UrlTools
      */
     public function match($regex, $queryString, array &$params)
     {
-        if (preg_match($regex, rawurldecode($queryString), $matches) !== 1) {
-            return false;
+        if (preg_match($regex, rawurldecode($queryString), $matches) === 1) {
+            if (!is_null($matches)) {
+                $this->paramsFromMatches($params, $matches);
+            }
+
+            return true;
         }
 
-        if ($matches) {
-            foreach ($matches as $key => $value) {
-                if (is_string($key)) {
-                    $params[$key] = $value;
-                }
+        return false;
+    }
+
+    /**
+     * Builds up parameters from the string keys of the matches array.
+     *
+     * @param array $params
+     * @param array $matches
+     */
+    protected function paramsFromMatches(array &$params, array $matches)
+    {
+        foreach ($matches as $key => $value) {
+            if (is_string($key)) {
+                $params[$key] = $value;
             }
         }
-
-        return true;
     }
 }
