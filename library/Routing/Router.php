@@ -195,7 +195,7 @@ class Router
             // the table.
             if (!isset($table[$type][$compiled])) {
                 $table[$type][$compiled] = array();
-                $table[$type][$compiled]["_name"] = $reflection->getName();
+                $table[$type][$compiled]["_name"] = $reflection->name;
             }
 
             // Ensure that the method will be invoked after all other middleware
