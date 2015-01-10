@@ -560,9 +560,12 @@ class Request extends MessageAbstract
      */
     public function getUrl()
     {
-        $url = $this->getScheme() . "://" . $this->getHost();
-        if (($this->getScheme() === "https" && $this->getPort() !== 443) || ($this->getScheme() === "http" && $this->getPort() !== 80)) {
-            $url .= sprintf(":%s", $this->getPort());
+        $scheme = $this->getScheme();
+        $port   = $this->getPort();
+
+        $url = $scheme . "://" . $this->getHost();
+        if (($scheme === "https" && $port !== 443) || ($scheme === "http" && $port !== 80)) {
+            $url .= sprintf(":%s", $port);
         }
 
         return $url;

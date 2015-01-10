@@ -91,5 +91,53 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($cookies, $req->getCookies());
     }
 
+    public function testGetUrl()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "HTTP_HOST" => "wilson.com",
+            "SERVER_NAME" => "wilson_server",
+            "SERVER_PORT" => 80,
+        ));
 
+        $this->assertEquals("http://wilson.com", $req->getUrl());
+    }
+
+    public function testGetUrlWithCustomPort()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "HTTP_HOST" => "wilson.com",
+            "SERVER_NAME" => "wilson_server",
+            "SERVER_PORT" => 8001,
+        ));
+
+        $this->assertEquals("http://wilson.com:8001", $req->getUrl());
+    }
+
+    public function testGetUrlWithHttps()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "HTTP_HOST" => "wilson.com",
+            "SERVER_NAME" => "wilson_server",
+            "SERVER_PORT" => 443,
+            "HTTPS" => "on"
+        ));
+
+        $this->assertEquals("https://wilson.com", $req->getUrl());
+    }
+
+    public function testGetUrlWithHttpsAndCustomPort()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "HTTP_HOST" => "wilson.com",
+            "SERVER_NAME" => "wilson_server",
+            "SERVER_PORT" => 444,
+            "HTTPS" => "on"
+        ));
+
+        $this->assertEquals("https://wilson.com:444", $req->getUrl());
+    }
 }
