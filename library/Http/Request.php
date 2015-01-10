@@ -188,6 +188,7 @@ class Request extends MessageAbstract
         $this->request = array_merge($get, $post);
         $this->cookies = $cookies;
         $this->files = $files;
+        $this->scheme = empty($server["HTTPS"]) || $server["HTTPS"] === "off" ? "http" : "https";
 
         $this->method = $server["REQUEST_METHOD"];
         $this->ip = $server["REMOTE_ADDR"];
@@ -195,6 +196,26 @@ class Request extends MessageAbstract
         $this->serverPort = $server["SERVER_PORT"];
         $this->serverProtocol = $server["SERVER_PROTOCOL"];
 
+        $this->buildPaths($server);
+        $this->setHeaders($server);
+
+        // Input stream (readable one time only; not available for multipart/form-data requests)
+        $this->content = ($content = @file_get_contents($input)) ? $content : "";
+
+        // Method Override
+        if ($this->hasHeader("HTTP_X_HTTP_METHOD_OVERRIDE")) {
+            $this->originalMethod = $this->method;
+            $this->method = strtoupper($this->getHeader("HTTP_X_HTTP_METHOD_OVERRIDE"));
+        }
+    }
+
+    /**
+     * Builds up the physical and virtual paths.
+     *
+     * @param array $server
+     */
+    protected function buildPaths(array $server)
+    {
         // Server params
         $scriptName = $server["SCRIPT_NAME"]; // <-- "/foo/index.php"
         $requestUri = $server["REQUEST_URI"]; // <-- "/foo/bar?test=abc" or "/foo/index.php/bar?test=abc"
@@ -215,23 +236,6 @@ class Request extends MessageAbstract
 
         // Query string (without leading "?")
         $this->queryString = $queryString;
-
-        $this->scheme = empty($server["HTTPS"]) || $server["HTTPS"] === "off" ? "http" : "https";
-
-        // Input stream (readable one time only; not available for multipart/form-data requests)
-        $content = @file_get_contents($input);
-        if (!$content) {
-            $content = "";
-        }
-        $this->content = $content;
-
-        $this->setHeaders($server);
-
-        // Method Override
-        if ($this->hasHeader("HTTP_X_HTTP_METHOD_OVERRIDE")) {
-            $this->originalMethod = $this->method;
-            $this->method = strtoupper($this->getHeader("HTTP_X_HTTP_METHOD_OVERRIDE"));
-        }
     }
 
     /**
