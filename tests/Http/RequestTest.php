@@ -216,4 +216,52 @@ class RequestTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals("abc.123.com", $req->getHost());
     }
+
+    function testGetHostWithPort()
+    {
+        $req = new Request();
+        $req->mock();
+
+        $this->assertEquals("localhost:80", $req->getHostWithPort());
+    }
+
+    function testCredentials()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "PHP_AUTH_USER" => "abc",
+            "PHP_AUTH_PW" => "123"
+        ));
+
+        $this->assertEquals("abc", $req->getUsername());
+        $this->assertEquals("123", $req->getPassword());
+    }
+
+    function testParams()
+    {
+        $req = new Request();
+
+        $req->setParam("Blah", "blah");
+        $this->assertEquals("blah", $req->getParam("Blah"));
+
+        $req->unsetParam("Blah");
+        $this->assertEquals(null, $req->getParam("Blah"));
+
+        $req->setParams($params = array("Blah" => "blady"));
+        $this->assertEquals($params, $req->getParams());
+    }
+
+    function testGetContentLength()
+    {
+        $req = new Request();
+        $req->mock(array("HTTP_CONTENT_LENGTH" => 10));
+        $this->assertEquals(10, $req->getContentLength());
+    }
+
+//    function testGetPhysicalPath()
+//    {
+//        $req = new Request();
+//        $req->mock();
+//        $this->assertEquals("/index.php", $req->getPhysicalPath());
+//    }
 }
