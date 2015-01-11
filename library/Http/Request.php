@@ -73,11 +73,6 @@ namespace Wilson\Http;
 class Request extends MessageAbstract
 {
     /**
-     * @var array
-     */
-    protected static $formDataMediaTypes = array("application/x-www-form-urlencoded");
-
-    /**
      * @var string
      */
     protected $method;
@@ -343,8 +338,8 @@ class Request extends MessageAbstract
     {
         $method = $this->getOriginalMethod() ?: $this->getMethod();
 
-        return ($method === "POST" && is_null($this->getContentType())) || in_array($this->getMediaType(),
-            self::$formDataMediaTypes);
+        return ($method === "POST" && is_null($this->getContentType())) || $this->getMediaType() ===
+            "application/x-www-form-urlencoded";
     }
 
     /**

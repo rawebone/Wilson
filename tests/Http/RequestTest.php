@@ -301,10 +301,92 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("Blah", $req->getContent());
     }
 
-//    function testGetPhysicalPath()
+    function testIsFormDataViaMethod()
+    {
+        $req = new Request();
+
+        $req->mock();
+        $this->assertFalse($req->isFormData());
+
+        $req->mock(array("REQUEST_METHOD" => "POST"));
+        $this->assertTrue($req->isFormData());
+
+        $req->mock(array("REQUEST_METHOD" => "POST", "HTTP_X_HTTP_METHOD_OVERRIDE" => "PUT"));
+        $this->assertTrue($req->isFormData());
+    }
+
+    function testIsFormDataViaContentType()
+    {
+        $req = new Request();
+        $req->mock(array("HTTP_CONTENT_TYPE" => "application/x-www-form-urlencoded"));
+
+        $this->assertTrue($req->isFormData());
+    }
+
+    function testGetModifiedSince()
+    {
+        $req = new Request();
+        $req->mock(array("HTTP_IF_MODIFIED_SINCE" => "abc"));
+
+        $this->assertEquals("abc", $req->getModifiedSince());
+    }
+
+    function testGetETags()
+    {
+        $req = new Request();
+        $req->mock(array("HTTP_IF_NONE_MATCH" => '"xyzzy", "r2d2xxxx", "c3piozzzz"'));
+        $this->assertEquals(array('"xyzzy"', '"r2d2xxxx"', '"c3piozzzz"'), $req->getETags());
+    }
+
+//    function testAppPathsInSubdirectoryWithoutHtaccess()
 //    {
 //        $req = new Request();
-//        $req->mock();
+//        $req->mock(array(
+//            "SCRIPT_NAME" => "/foo/index.php", //<-- Physical
+//            "PATH_INFO" => "/bar/xyz", //<-- Virtual
+//        ));
+//
+//        $this->assertEquals("/foo/index.php", $req->getPhysicalPath());
+//        $this->assertEquals("/foo/index.php/bar/xyz", $req->getPath());
+//        $this->assertEquals("/bar/xyz", $req->getPathInfo());
+//    }
+//
+//    function testAppPathsInSubdirectoryWithHtaccess()
+//    {
+//        $req = new Request();
+//        $req->mock(array(
+//            "SCRIPT_NAME" => "/foo", //<-- Physical
+//            "PATH_INFO" => "/bar/xyz", //<-- Virtual
+//        ));
+//
+//        $this->assertEquals("/foo", $req->getPhysicalPath());
+//        $this->assertEquals("/foo/bar/xyz", $req->getPath());
+//        $this->assertEquals("/bar/xyz", $req->getPathInfo());
+//    }
+//
+//    function testAppPathsInRootDirectoryWithoutHtaccess()
+//    {
+//        $req = new Request();
+//        $req->mock(array(
+//            "SCRIPT_NAME" => "/index.php", //<-- Physical
+//            "PATH_INFO" => "/bar/xyz", //<-- Virtual
+//        ));
+//
 //        $this->assertEquals("/index.php", $req->getPhysicalPath());
+//        $this->assertEquals("/index.php/bar/xyz", $req->getPath());
+//        $this->assertEquals("/bar/xyz", $req->getPathInfo());
+//    }
+//
+//    function testAppPathsInRootDirectoryWithHtaccess()
+//    {
+//        $req = new Request();
+//        $req->mock(array(
+//            "SCRIPT_NAME" => "", //<-- Physical
+//            "PATH_INFO" => "/bar/xyz", //<-- Virtual
+//        ));
+//
+//        $this->assertEquals("", $req->getPhysicalPath());
+//        $this->assertEquals("/bar/xyz", $req->getPath());
+//        $this->assertEquals("/bar/xyz", $req->getPathInfo());
 //    }
 }
