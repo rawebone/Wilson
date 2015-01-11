@@ -172,9 +172,7 @@ class Request extends MessageAbstract
             "HTTPS" => "off"
         );
 
-        file_put_contents("php://memory", $content);
-
-        $this->initialise(array_merge($defaults, $server), $get, $post, $cookies, $files, "php://memory");
+        $this->initialise(array_merge($defaults, $server), $get, $post, $cookies, $files, $content);
     }
 
     public function initialise(
@@ -183,18 +181,16 @@ class Request extends MessageAbstract
         array $post,
         array $cookies,
         array $files,
-        $input = "php://input"
+        $content = ""
     ) {
         $this->cookies = $cookies;
+        $this->content = $content;
         $this->files = $files;
 
         $this->buildServerInfo($server);
         $this->buildPaths($server);
         $this->setHeaders($server);
         $this->setParams(array_merge($get, $post));
-
-        // Input stream (readable one time only; not available for multipart/form-data requests)
-        $this->content = ($content = @file_get_contents($input)) ? $content : "";
 
         // Method Override
         if (($original = $this->getHeader("HTTP_X_HTTP_METHOD_OVERRIDE"))) {

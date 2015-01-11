@@ -282,6 +282,25 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertNull($req->getContentCharset());
     }
 
+    function testGetProtocol()
+    {
+        $req = new Request();
+
+        $req->mock();
+        $this->assertEquals("HTTP/1.1", $req->getProtocol());
+
+        $req->mock(array("SERVER_PROTOCOL" => "HTTP/1.0"));
+        $this->assertEquals("HTTP/1.0", $req->getProtocol());
+    }
+
+    function testGetContent()
+    {
+        $req = new Request();
+        $req->mock(array(), array(), array(), array(), array(), "Blah");
+
+        $this->assertEquals("Blah", $req->getContent());
+    }
+
 //    function testGetPhysicalPath()
 //    {
 //        $req = new Request();
