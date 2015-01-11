@@ -50,6 +50,20 @@ class MessageAbstractTest extends \PHPUnit_Framework_TestCase
         $msg = new Message();
         $msg->setBody(1323);
     }
+
+    function testParams()
+    {
+        $req = new Message();
+
+        $req->setParam("Blah", "blah");
+        $this->assertEquals("blah", $req->getParam("Blah"));
+
+        $req->unsetParam("Blah");
+        $this->assertEquals(null, $req->getParam("Blah"));
+
+        $req->setParams($params = array("Blah" => "blady"));
+        $this->assertEquals($params, $req->getParams());
+    }
 }
 
 class Message extends MessageAbstract { }

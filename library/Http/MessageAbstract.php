@@ -65,6 +65,11 @@ abstract class MessageAbstract
     private $headers = array();
 
     /**
+     * @var array
+     */
+    private $params = array();
+
+    /**
      * @return array
      */
     public function getHeaders()
@@ -141,5 +146,57 @@ abstract class MessageAbstract
         }
 
         $this->body = $content;
+    }
+
+
+    /**
+     * Returns a request parameter, or the default.
+     *
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
+    public function getParam($key, $default = null)
+    {
+        return isset($this->params[$key]) ? $this->params[$key] : $default;
+    }
+
+    /**
+     * @param string $key
+     * @return void
+     */
+    public function unsetParam($key)
+    {
+        unset($this->params[$key]);
+    }
+
+    /**
+     * @return array
+     */
+    public function getParams()
+    {
+        return $this->params;
+    }
+
+    /**
+     * @param array $params
+     * @return void
+     */
+    public function setParams(array $params)
+    {
+        $this->params = $params;
+    }
+
+    /**
+     * Sets a request parameter, if the value is null then the parameter will
+     * be unset.
+     *
+     * @param string $key
+     * @param mixed $value
+     * @return void
+     */
+    public function setParam($key, $value)
+    {
+        $this->params[$key] = $value;
     }
 }

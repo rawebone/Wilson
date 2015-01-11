@@ -185,13 +185,13 @@ class Request extends MessageAbstract
         array $files,
         $input = "php://input"
     ) {
-        $this->request = array_merge($get, $post);
         $this->cookies = $cookies;
         $this->files = $files;
 
         $this->buildServerInfo($server);
         $this->buildPaths($server);
         $this->setHeaders($server);
+        $this->setParams(array_merge($get, $post));
 
         // Input stream (readable one time only; not available for multipart/form-data requests)
         $this->content = ($content = @file_get_contents($input)) ? $content : "";
@@ -316,60 +316,6 @@ class Request extends MessageAbstract
     public function getUserAgent()
     {
         return $this->getHeader("HTTP_USER_AGENT", "");
-    }
-
-    /**
-     * Returns a request parameter, or the default.
-     *
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
-     */
-    public function getParam($key, $default = null)
-    {
-        return isset($this->request[$key]) ? $this->request[$key] : $default;
-    }
-
-    /**
-     * @param string $key
-     * @return void
-     */
-    public function unsetParam($key)
-    {
-        unset($this->request[$key]);
-    }
-
-    /**
-     * @return array
-     */
-    public function getParams()
-    {
-        return $this->request;
-    }
-
-    /**
-     * @param array $params
-     * @return void
-     * @see setParam
-     */
-    public function setParams(array $params)
-    {
-        foreach ($params as $key => $value) {
-            $this->setParam($key, $value);
-        }
-    }
-
-    /**
-     * Sets a request parameter, if the value is null then the parameter will
-     * be unset.
-     *
-     * @param string $key
-     * @param mixed $value
-     * @return void
-     */
-    public function setParam($key, $value)
-    {
-        $this->request[$key] = $value;
     }
 
     /**

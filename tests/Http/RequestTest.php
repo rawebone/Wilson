@@ -237,19 +237,6 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("123", $req->getPassword());
     }
 
-    function testParams()
-    {
-        $req = new Request();
-
-        $req->setParam("Blah", "blah");
-        $this->assertEquals("blah", $req->getParam("Blah"));
-
-        $req->unsetParam("Blah");
-        $this->assertEquals(null, $req->getParam("Blah"));
-
-        $req->setParams($params = array("Blah" => "blady"));
-        $this->assertEquals($params, $req->getParams());
-    }
 
     function testGetContentLength()
     {
