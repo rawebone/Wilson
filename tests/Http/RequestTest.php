@@ -237,12 +237,49 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("123", $req->getPassword());
     }
 
-
     function testGetContentLength()
     {
         $req = new Request();
         $req->mock(array("HTTP_CONTENT_LENGTH" => 10));
         $this->assertEquals(10, $req->getContentLength());
+    }
+
+    function testGetMediaTypeParams()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "HTTP_CONTENT_TYPE" => "application/json; charset=ISO-8859-4"
+        ));
+
+        $params = $req->getMediaTypeParams();
+        $this->assertEquals(1, count($params));
+        $this->assertArrayHasKey("charset", $params);
+        $this->assertEquals("ISO-8859-4", $params["charset"]);
+    }
+
+    function testGetMediaTypeParamsWhenNotExists()
+    {
+        $req = new Request();
+        $params = $req->getMediaTypeParams();
+
+        $this->assertTrue(is_array($params));
+        $this->assertEquals(0, count($params));
+    }
+
+    function testGetContentCharset()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "HTTP_CONTENT_TYPE" => "application/json; charset=ISO-8859-4"
+        ));
+
+        $this->assertEquals("ISO-8859-4", $req->getContentCharset());
+    }
+
+    function testGetContentCharsetWhenNotExists()
+    {
+        $req = new Request();
+        $this->assertNull($req->getContentCharset());
     }
 
 //    function testGetPhysicalPath()

@@ -429,18 +429,17 @@ class Request extends MessageAbstract
      */
     public function getMediaTypeParams()
     {
-        $contentType = $this->getContentType();
-        $contentTypeParams = array();
-        if ($contentType) {
-            $contentTypeParts = preg_split("/\\s*[;,]\\s*/", $contentType);
-            $contentTypePartsLength = count($contentTypeParts);
-            for ($i = 1; $i < $contentTypePartsLength; $i++) {
-                $paramParts = explode("=", $contentTypeParts[$i]);
-                $contentTypeParams[strtolower($paramParts[0])] = $paramParts[1];
+        $params = array();
+        if (($contentType = $this->getContentType())) {
+            $parts = preg_split("/\\s*[;,]\\s*/", $contentType);
+
+            for ($i = 1, $length = count($parts); $i < $length; $i++) {
+                $paramParts = explode("=", $parts[$i]);
+                $params[strtolower($paramParts[0])] = $paramParts[1];
             }
         }
 
-        return $contentTypeParams;
+        return $params;
     }
 
     /**
