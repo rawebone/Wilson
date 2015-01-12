@@ -496,6 +496,14 @@ class Request extends MessageAbstract
     }
 
     /**
+     * @return string
+     */
+    public function getQueryString()
+    {
+        return $this->queryString;
+    }
+
+    /**
      * Get URL (scheme + host [ + port if non-standard ])
      * @return string
      */

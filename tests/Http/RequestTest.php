@@ -338,55 +338,207 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array('"xyzzy"', '"r2d2xxxx"', '"c3piozzzz"'), $req->getETags());
     }
 
-//    function testAppPathsInSubdirectoryWithoutHtaccess()
-//    {
-//        $req = new Request();
-//        $req->mock(array(
-//            "SCRIPT_NAME" => "/foo/index.php", //<-- Physical
-//            "PATH_INFO" => "/bar/xyz", //<-- Virtual
-//        ));
-//
-//        $this->assertEquals("/foo/index.php", $req->getPhysicalPath());
-//        $this->assertEquals("/foo/index.php/bar/xyz", $req->getPath());
-//        $this->assertEquals("/bar/xyz", $req->getPathInfo());
-//    }
-//
-//    function testAppPathsInSubdirectoryWithHtaccess()
-//    {
-//        $req = new Request();
-//        $req->mock(array(
-//            "SCRIPT_NAME" => "/foo", //<-- Physical
-//            "PATH_INFO" => "/bar/xyz", //<-- Virtual
-//        ));
-//
-//        $this->assertEquals("/foo", $req->getPhysicalPath());
-//        $this->assertEquals("/foo/bar/xyz", $req->getPath());
-//        $this->assertEquals("/bar/xyz", $req->getPathInfo());
-//    }
-//
-//    function testAppPathsInRootDirectoryWithoutHtaccess()
-//    {
-//        $req = new Request();
-//        $req->mock(array(
-//            "SCRIPT_NAME" => "/index.php", //<-- Physical
-//            "PATH_INFO" => "/bar/xyz", //<-- Virtual
-//        ));
-//
-//        $this->assertEquals("/index.php", $req->getPhysicalPath());
-//        $this->assertEquals("/index.php/bar/xyz", $req->getPath());
-//        $this->assertEquals("/bar/xyz", $req->getPathInfo());
-//    }
-//
-//    function testAppPathsInRootDirectoryWithHtaccess()
-//    {
-//        $req = new Request();
-//        $req->mock(array(
-//            "SCRIPT_NAME" => "", //<-- Physical
-//            "PATH_INFO" => "/bar/xyz", //<-- Virtual
-//        ));
-//
-//        $this->assertEquals("", $req->getPhysicalPath());
-//        $this->assertEquals("/bar/xyz", $req->getPath());
-//        $this->assertEquals("/bar/xyz", $req->getPathInfo());
-//    }
+    /**
+     * Test parses script name and path info
+     *
+     * Pre-conditions:
+     * URL Rewrite is disabled;
+     * App installed in subdirectory;
+     */
+    function testParsesPathsWithoutUrlRewriteInSubdirectory()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "SCRIPT_NAME" => "/foo/index.php",
+            "SCRIPT_FILENAME" => "/var/www/foo/index.php",
+            "REQUEST_URI" => "/foo/index.php/bar/xyz",
+            "PATH_INFO" => "/bar/xyz",
+        ));
+
+        $this->assertEquals("/bar/xyz", $req->getPathInfo());
+        $this->assertEquals("/foo/index.php", $req->getPhysicalPath());
+        $this->assertEquals("/foo/index.php/bar/xyz", $req->getPath());
+    }
+
+    /**
+     * Test parses script name and path info
+     *
+     * Pre-conditions:
+     * URL Rewrite is disabled;
+     * App installed in root directory;
+     */
+    function testParsesPathsWithoutUrlRewriteInRootDirectory()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "SCRIPT_NAME" => "/index.php",
+            "SCRIPT_FILENAME" => "/var/www/index.php",
+            "REQUEST_URI" => "/index.php/bar/xyz",
+            "PATH_INFO" => "/bar/xyz",
+        ));
+
+        $this->assertEquals("/bar/xyz", $req->getPathInfo());
+        $this->assertEquals("/index.php", $req->getPhysicalPath());
+        $this->assertEquals("/index.php/bar/xyz", $req->getPath());
+    }
+
+    /**
+     * Test parses script name and path info
+     *
+     * Pre-conditions:
+     * URL Rewrite disabled;
+     * App installed in root directory;
+     * Requested resource is "/";
+     */
+    function testParsesPathsWithoutUrlRewriteInRootDirectoryForAppRootUri()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "SCRIPT_NAME" => "/index.php",
+            "SCRIPT_FILENAME" => "/var/www/index.php",
+            "REQUEST_URI" => "/index.php",
+        ));
+
+        $this->assertEquals("/", $req->getPathInfo());
+        $this->assertEquals("/index.php", $req->getPhysicalPath());
+        $this->assertEquals("/index.php/", $req->getPath());
+    }
+
+    /**
+     * Test parses script name and path info
+     *
+     * Pre-conditions:
+     * URL Rewrite enabled;
+     * App installed in subdirectory;
+     */
+    function testParsesPathsWithUrlRewriteInSubdirectory()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "SCRIPT_NAME" => "/foo/index.php",
+            "SCRIPT_FILENAME" => "/var/www/foo/index.php",
+            "REQUEST_URI" => "/foo/bar/xyz",
+        ));
+
+        $this->assertEquals("/bar/xyz", $req->getPathInfo());
+        $this->assertEquals("/foo", $req->getPhysicalPath());
+        $this->assertEquals("/foo/bar/xyz", $req->getPath());
+    }
+
+    /**
+     * Test parses script name and path info
+     *
+     * Pre-conditions:
+     * URL Rewrite enabled;
+     * App installed in root directory;
+     */
+    public function testParsesPathsWithUrlRewriteInRootDirectory()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "SCRIPT_NAME" => "/index.php",
+            "SCRIPT_FILENAME" => "/var/www/index.php",
+            "REQUEST_URI" => "/bar/xyz",
+        ));
+
+        $this->assertEquals("/bar/xyz", $req->getPathInfo());
+        $this->assertEquals("", $req->getPhysicalPath());
+        $this->assertEquals("/bar/xyz", $req->getPath());
+    }
+
+    /**
+     * Test parses script name and path info
+     *
+     * Pre-conditions:
+     * URL Rewrite enabled;
+     * App installed in root directory;
+     * Requested resource is "/"
+     */
+    public function testParsesPathsWithUrlRewriteInRootDirectoryForAppRootUri()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "SCRIPT_NAME" => "/index.php",
+            "SCRIPT_FILENAME" => "/var/www/index.php",
+            "REQUEST_URI" => "/",
+        ));
+
+        $this->assertEquals("/", $req->getPathInfo());
+        $this->assertEquals("", $req->getPhysicalPath());
+        $this->assertEquals("/", $req->getPath());
+    }
+
+    /**
+     * Test parses query string
+     *
+     * Pre-conditions:
+     * $_SERVER['QUERY_STRING'] exists and is not empty;
+     */
+    function testParsesQueryString()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "QUERY_STRING" => "one=1&two=2&three=3"
+        ));
+
+        $this->assertEquals("one=1&two=2&three=3", $req->getQueryString());
+    }
+
+    /**
+     * Test removes query string from PATH_INFO when using URL Rewrite
+     *
+     * Pre-conditions:
+     * $_SERVER['QUERY_STRING'] exists and is not empty;
+     * URL Rewrite enabled;
+     */
+    function testRemovesQueryStringFromPathInfo()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "SCRIPT_NAME" => "/foo/index.php",
+            "SCRIPT_FILENAME" => "/var/www/foo/index.php",
+            "REQUEST_URI" => "/foo/bar/xyz?one=1&two=2&three=3",
+            "QUERY_STRING" => "one=1&two=2&three=3"
+        ));
+
+        $this->assertEquals("/bar/xyz", $req->getPathInfo());
+    }
+
+    /**
+     * Test environment's PATH_INFO retains URL encoded characters (e.g. #)
+     *
+     * In earlier version, \Slim\Environment would use PATH_INFO instead
+     * of REQUEST_URI to determine the root URI and resource URI.
+     * Unfortunately, the server would URL decode the PATH_INFO string
+     * before it was handed to PHP. This prevented certain URL-encoded
+     * characters like the octothorpe from being delivered correctly to
+     * the Slim application environment. This test ensures the
+     * REQUEST_URI is used instead and parsed as expected.
+     */
+    function testPathInfoRetainsUrlEncodedCharacters()
+    {
+        $req = new Request();
+        $req->mock(array(
+            "SCRIPT_NAME" => "/index.php",
+            "SCRIPT_FILENAME" => "/var/www/index.php",
+            "REQUEST_URI" => "/foo/%23bar",
+            "PATH_INFO" => "/bar/xyz",
+        ));
+
+        $this->assertEquals("/foo/%23bar", $req->getPathInfo());
+    }
+
+    /**
+     * Test parses query string
+     *
+     * Pre-conditions:
+     * $_SERVER['QUERY_STRING'] does not exist;
+     */
+    public function testParsesQueryStringThatDoesNotExist()
+    {
+        $req = new Request();
+        $req->mock();
+
+        $this->assertEquals("", $req->getQueryString());
+    }
 }
