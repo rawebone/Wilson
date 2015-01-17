@@ -162,7 +162,106 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         ));
 
         $response = new Response();
-        $this->assertNull($response->checkForModifications($request));
+        $this->assertFalse($response->checkForModifications($request));
     }
 
+    function testCheckForModificationsLastModified()
+    {
+        $before = "Sun, 25 Aug 2013 18:32:31 GMT";
+        $modified = "Sun, 25 Aug 2013 18:33:31 GMT";
+        $after = "Sun, 25 Aug 2013 19:33:31 GMT";
+
+        $request = new Request();
+        $request->mock(array(
+            "HTTP_IF_MODIFIED_SINCE" => $modified
+        ));
+
+        $response = new Response();
+        $response->setHeader("Last-Modified", $before);
+
+        $response->setHeader("Last-Modified", $modified);
+        $this->assertTrue($response->checkForModifications($request));
+
+        $response->setHeader("Last-Modified", $before);
+        $this->assertTrue($response->checkForModifications($request));
+
+        $response->setHeader("Last-Modified", $after);
+        $this->assertFalse($response->checkForModifications($request));
+
+        $response->setHeader("Last-Modified", "");
+        $this->assertFalse($response->checkForModifications($request));
+    }
+
+    function testCheckForModificationsEtag()
+    {
+        $etagOne = "randomly_generated_etag";
+        $etagTwo = "randomly_generated_etag_2";
+
+        $request = new Request();
+        $request->mock(array(
+            "HTTP_IF_NONE_MATCH" => "$etagOne, $etagTwo, etagThree"
+        ));
+
+        $response = new Response();
+        $response->setHeader("ETag", $etagOne);
+        $this->assertTrue($response->checkForModifications($request));
+
+        $response->setHeader("ETag", $etagTwo);
+        $this->assertTrue($response->checkForModifications($request));
+
+        $response->setHeader("ETag", "");
+        $this->assertFalse($response->checkForModifications($request));
+    }
+
+    function testCheckForModificationsLastModifiedAndEtag()
+    {
+        $before = "Sun, 25 Aug 2013 18:32:31 GMT";
+        $modified = "Sun, 25 Aug 2013 18:33:31 GMT";
+        $after = "Sun, 25 Aug 2013 19:33:31 GMT";
+        $etag = "randomly_generated_etag";
+
+        $request = new Request();
+        $request->mock(array(
+            "HTTP_IF_NONE_MATCH" => "$etag, etagThree",
+            "HTTP_IF_MODIFIED_SINCE" => $modified
+        ));
+
+        $response = new Response();
+        $response->setHeaders(array(
+           "ETag" => $etag,
+            "Last-Modified" => $after
+        ));
+        $this->assertFalse($response->checkForModifications($request));
+
+        $response->setHeaders(array(
+            "ETag" => "non_existent_etag",
+            "Last-Modified" => $before
+        ));
+        $this->assertFalse($response->checkForModifications($request));
+
+        $response->setHeaders(array(
+            "ETag" => $etag,
+            "Last-Modified" => $modified
+        ));
+        $this->assertTrue($response->checkForModifications($request));
+    }
+
+    function testIsNotModifiedIfModifiedSinceAndEtagWithoutLastModified()
+    {
+        $modified = "Sun, 25 Aug 2013 18:33:31 GMT";
+        $etag = "randomly_generated_etag";
+
+        $request = new Request();
+        $request->mock(array(
+            "HTTP_IF_NONE_MATCH" => "$etag, etagThree",
+            "HTTP_IF_MODIFIED_SINCE" => $modified
+        ));
+
+        $response = new Response();
+        $response->setHeader("ETag", $etag);
+        $this->assertTrue($response->checkForModifications($request));
+
+        $response->setHeader("ETag", "non-existent-etag");
+        $this->assertFalse($response->checkForModifications($request));
+    }
 }

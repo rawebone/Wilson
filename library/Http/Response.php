@@ -286,11 +286,12 @@ class Response extends MessageAbstract
      * off of Symfony\Component\HttpFoundation\Response::isNotModified().
      *
      * @param Request $request
+     * @return boolean
      */
     public function checkForModifications(Request $request)
     {
         if (!$request->isSafeMethod()) {
-            return;
+            return false;
         }
 
         $notModified = false;
@@ -308,6 +309,8 @@ class Response extends MessageAbstract
         if ($notModified) {
             $this->notModified();
         }
+
+        return $notModified;
     }
 
     /**
