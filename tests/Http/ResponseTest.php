@@ -136,6 +136,24 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("Hello", ob_get_clean());
     }
 
+    function testNotModified()
+    {
+        $response = new Response();
+        $response->setHeaders(array(
+            "Allow" => "",
+            "Content-Encoding" => "",
+            "Content-Language" => "",
+            "Content-Length" => "",
+            "Content-MD5" => "",
+            "Content-Type" => "",
+            "Last-Modified" => ""
+        ));
+
+        $response->notModified();
+        $this->assertEquals(304, $response->getStatus());
+        $this->assertEmpty($response->getHeaders());
+    }
+
     function testCheckForModificationsWithNonSafeMethod()
     {
         $request = new Request();
@@ -146,4 +164,5 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $response = new Response();
         $this->assertNull($response->checkForModifications($request));
     }
+
 }

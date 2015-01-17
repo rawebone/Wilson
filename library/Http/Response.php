@@ -306,23 +306,27 @@ class Response extends MessageAbstract
         }
 
         if ($notModified) {
-            $this->setStatus(304);
-
-            // These headers are not allowed to be included with a 304 response
-            $headers = array(
-                "Allow",
-                "Content-Encoding",
-                "Content-Language",
-                "Content-Length",
-                "Content-MD5",
-                "Content-Type",
-                "Last-Modified"
-            );
-
-            foreach ($headers as $header) {
-                $this->unsetHeader($header);
-            }
+            $this->notModified();
         }
+    }
+
+    /**
+     * Converts to a valid Not Modified response.
+     */
+    public function notModified()
+    {
+        $this->setStatus(304);
+
+        // These headers are not allowed to be included with a 304 response
+        $this->unsetHeaders(array(
+            "Allow",
+            "Content-Encoding",
+            "Content-Language",
+            "Content-Length",
+            "Content-MD5",
+            "Content-Type",
+            "Last-Modified"
+        ));
     }
 
     /**
