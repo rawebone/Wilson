@@ -128,6 +128,16 @@ abstract class MessageAbstract
     }
 
     /**
+     * @param array $names
+     */
+    public function unsetHeaders(array $names)
+    {
+        foreach ($names as $name) {
+            unset($this->headers[$name]);
+        }
+    }
+
+    /**
      * @return string|callable
      */
     public function getBody()

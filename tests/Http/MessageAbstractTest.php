@@ -30,6 +30,9 @@ class MessageAbstractTest extends \PHPUnit_Framework_TestCase
         $msg = new Message();
         $msg->setHeaders($headers = array("Blah" => "blady"));
         $this->assertEquals($headers, $msg->getHeaders());
+
+        $msg->unsetHeaders(array("Blah"));
+        $this->assertEmpty($msg->getHeaders());
     }
 
     function testGetSetBody()
