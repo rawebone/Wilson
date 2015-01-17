@@ -276,13 +276,7 @@ class Api
 
             case Router::METHOD_NOT_ALLOWED:
                 $response->setHeader("Allow", join(", ", $match->allowed));
-
-                if ($request->getMethod() === "OPTIONS") {
-                    $response->setStatus(200);
-                } else {
-                    $response->setStatus(405);
-
-                }
+                $response->setStatus($request->getMethod() === "OPTIONS" ? 200 : 405);
                 break;
         }
     }
