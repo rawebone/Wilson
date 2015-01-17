@@ -11,42 +11,42 @@
 
 namespace Wilson\Http;
 
-/**
- * This object has been derived from Slim framework in the main and Symfony
- * HttpFoundation in other places. Their licences:
- */
+    /**
+     * This object has been derived from Slim framework in the main and Symfony
+     * HttpFoundation in other places. Their licences:
+     */
 
-/**
- * Slim - a micro PHP 5 framework
- *
- * @author      Josh Lockhart <info@slimframework.com>
- * @copyright   2011 Josh Lockhart
- * @link        http://www.slimframework.com
- * @license     http://www.slimframework.com/license
- * @version     2.4.2
- * @package     Slim
- *
- * MIT LICENSE
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
+    /**
+     * Slim - a micro PHP 5 framework
+     *
+     * @author      Josh Lockhart <info@slimframework.com>
+     * @copyright   2011 Josh Lockhart
+     * @link        http://www.slimframework.com
+     * @license     http://www.slimframework.com/license
+     * @version     2.4.2
+     * @package     Slim
+     *
+     * MIT LICENSE
+     *
+     * Permission is hereby granted, free of charge, to any person obtaining
+     * a copy of this software and associated documentation files (the
+     * "Software"), to deal in the Software without restriction, including
+     * without limitation the rights to use, copy, modify, merge, publish,
+     * distribute, sublicense, and/or sell copies of the Software, and to
+     * permit persons to whom the Software is furnished to do so, subject to
+     * the following conditions:
+     *
+     * The above copyright notice and this permission notice shall be
+     * included in all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+     * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+     * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+     * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+     * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+     * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+     * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+     */
 
 /**
  * Copyright (c) 2004-2014 Fabien Potencier
@@ -79,7 +79,6 @@ class Response extends MessageAbstract
         // Informational 1xx
         100 => "100 Continue",
         101 => "101 Switching Protocols",
-
         // Successful 2xx
         200 => "200 OK",
         201 => "201 Created",
@@ -88,7 +87,6 @@ class Response extends MessageAbstract
         204 => "204 No Content",
         205 => "205 Reset Content",
         206 => "206 Partial Content",
-
         // Redirection 3xx
         300 => "300 Multiple Choices",
         301 => "301 Moved Permanently",
@@ -98,7 +96,6 @@ class Response extends MessageAbstract
         305 => "305 Use Proxy",
         306 => "306 (Unused)",
         307 => "307 Temporary Redirect",
-
         // Client Error 4xx
         400 => "400 Bad Request",
         401 => "401 Unauthorized",
@@ -121,7 +118,6 @@ class Response extends MessageAbstract
         418 => "418 I\"m a teapot",
         422 => "422 Unprocessable Entity",
         423 => "423 Locked",
-
         // Server Error 5xx
         500 => "500 Internal Server Error",
         501 => "501 Not Implemented",
@@ -240,6 +236,16 @@ class Response extends MessageAbstract
     }
 
     /**
+     * Returns the HTTP protocol of the response.
+     *
+     * @return string
+     */
+    public function getProtocol()
+    {
+        return $this->protocol;
+    }
+
+    /**
      * Prepares the response for being sent back to the client.
      * This is based off Symfony's HttpFoundation Response::prepare()
      * method and Slim's Response sending.
@@ -249,35 +255,27 @@ class Response extends MessageAbstract
      */
     public function prepare(Request $request)
     {
-        $this->checkForModifications($request);
+        if ($this->isNotModified($request)) {
+            $this->notModified();
+        }
 
         // Fix output content
-        if ($this->isInformational() || $this->status === 204 || $this->status === 304) {
+        if ($this->isInformational()
+            || $request->getMethod() === "HEAD"
+            || $this->status === 204
+            || $this->status === 304
+        ) {
+            $this->unsetHeaders(array("Content-Type", "Content-Length"));
             $this->setBody("");
-            $this->unsetHeader("Content-Type");
-            $this->unsetHeader("Content-Length");
 
         } else {
-            $body = $this->getBody();
-            if (is_string($body)) {
+            if (is_string($body = $this->getBody())) {
                 $this->setHeader("Content-Length", strlen($body));
             }
-
-            if ($request->getMethod() === "HEAD") {
-                $this->setBody("");
-            }
         }
 
-        // Match request protocol
-        if ($this->protocol !== $request->getProtocol()) {
-            $this->protocol = $request->getProtocol();
-        }
-
-        // On the older HTTP protocol we need to send more cache headers
-        if ($this->protocol === "HTTP/1.0" && $this->getHeader("Cache-Control") === "no-cache") {
-            $this->setHeader("Pragma", "no-cache");
-            $this->setHeader("Expires", -1);
-        }
+        $this->checkProtocol($request);
+        $this->checkCacheControl();
     }
 
     /**
@@ -288,7 +286,7 @@ class Response extends MessageAbstract
      * @param Request $request
      * @return boolean
      */
-    public function checkForModifications(Request $request)
+    public function isNotModified(Request $request)
     {
         if (!$request->isSafeMethod()) {
             return false;
@@ -306,11 +304,29 @@ class Response extends MessageAbstract
             $notModified = strtotime($modifiedSince) >= strtotime($lastModified) && (!$eTags || $notModified);
         }
 
-        if ($notModified) {
-            $this->notModified();
-        }
-
         return $notModified;
+    }
+
+    /**
+     * Match the HTTP protocol.
+     *
+     * @param Request $request
+     */
+    public function checkProtocol(Request $request)
+    {
+        if ($this->protocol !== $request->getProtocol()) {
+            $this->protocol = $request->getProtocol();
+        }
+    }
+
+    /**
+     * On the older HTTP protocol we need to send more cache headers.
+     */
+    public function checkCacheControl()
+    {
+        if ($this->protocol === "HTTP/1.0" && $this->getHeader("Cache-Control") === "no-cache") {
+            $this->setHeaders(array("Pragma" => "no-cache", "Expires" => -1));
+        }
     }
 
     /**

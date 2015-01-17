@@ -162,7 +162,7 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         ));
 
         $response = new Response();
-        $this->assertFalse($response->checkForModifications($request));
+        $this->assertFalse($response->isNotModified($request));
     }
 
     function testCheckForModificationsLastModified()
@@ -180,16 +180,16 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $response->setHeader("Last-Modified", $before);
 
         $response->setHeader("Last-Modified", $modified);
-        $this->assertTrue($response->checkForModifications($request));
+        $this->assertTrue($response->isNotModified($request));
 
         $response->setHeader("Last-Modified", $before);
-        $this->assertTrue($response->checkForModifications($request));
+        $this->assertTrue($response->isNotModified($request));
 
         $response->setHeader("Last-Modified", $after);
-        $this->assertFalse($response->checkForModifications($request));
+        $this->assertFalse($response->isNotModified($request));
 
         $response->setHeader("Last-Modified", "");
-        $this->assertFalse($response->checkForModifications($request));
+        $this->assertFalse($response->isNotModified($request));
     }
 
     function testCheckForModificationsEtag()
@@ -204,13 +204,13 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
 
         $response = new Response();
         $response->setHeader("ETag", $etagOne);
-        $this->assertTrue($response->checkForModifications($request));
+        $this->assertTrue($response->isNotModified($request));
 
         $response->setHeader("ETag", $etagTwo);
-        $this->assertTrue($response->checkForModifications($request));
+        $this->assertTrue($response->isNotModified($request));
 
         $response->setHeader("ETag", "");
-        $this->assertFalse($response->checkForModifications($request));
+        $this->assertFalse($response->isNotModified($request));
     }
 
     function testCheckForModificationsLastModifiedAndEtag()
@@ -231,19 +231,19 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
            "ETag" => $etag,
             "Last-Modified" => $after
         ));
-        $this->assertFalse($response->checkForModifications($request));
+        $this->assertFalse($response->isNotModified($request));
 
         $response->setHeaders(array(
             "ETag" => "non_existent_etag",
             "Last-Modified" => $before
         ));
-        $this->assertFalse($response->checkForModifications($request));
+        $this->assertFalse($response->isNotModified($request));
 
         $response->setHeaders(array(
             "ETag" => $etag,
             "Last-Modified" => $modified
         ));
-        $this->assertTrue($response->checkForModifications($request));
+        $this->assertTrue($response->isNotModified($request));
     }
 
     function testIsNotModifiedIfModifiedSinceAndEtagWithoutLastModified()
@@ -259,9 +259,40 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
 
         $response = new Response();
         $response->setHeader("ETag", $etag);
-        $this->assertTrue($response->checkForModifications($request));
+        $this->assertTrue($response->isNotModified($request));
 
         $response->setHeader("ETag", "non-existent-etag");
-        $this->assertFalse($response->checkForModifications($request));
+        $this->assertFalse($response->isNotModified($request));
+    }
+
+    function testCheckProtocol()
+    {
+        $request = new Request();
+        $request->mock(array(
+            "SERVER_PROTOCOL" => "HTTP/1.0"
+        ));
+
+        $response = new Response();
+        $this->assertEquals("HTTP/1.1", $response->getProtocol());
+
+        $response->checkProtocol($request);
+        $this->assertEquals("HTTP/1.0", $response->getProtocol());
+    }
+
+    function testCheckCacheControl()
+    {
+        $request = new Request();
+        $request->mock(array(
+            "SERVER_PROTOCOL" => "HTTP/1.0"
+        ));
+
+        $response = new Response();
+        $response->setHeader("Cache-Control", "no-cache");
+        $response->prepare($request);
+
+        $response->checkCacheControl();
+
+        $this->assertEquals("no-cache", $response->getHeader("Pragma"));
+        $this->assertEquals(-1, $response->getHeader("Expires"));
     }
 }
