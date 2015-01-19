@@ -237,6 +237,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns the body sent with the request.
+     *
      * @return string
      */
     public function getContent()
@@ -245,6 +247,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns the username associated with the request ($_SERVER["PHP_AUTH_USER"]).
+     *
      * @return string|null
      */
     public function getUsername()
@@ -253,6 +257,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns the password associated with the request ($_SERVER["PHP_AUTH_PW"]).
+     *
      * @return string|null
      */
     public function getPassword()
@@ -261,6 +267,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns whether the request was made via XMLHttpRequest.
+     *
      * @return bool
      */
     public function isAjax()
@@ -269,6 +277,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns whether the communications channel is secured by SSL.
+     *
      * @return bool
      */
     public function isSecure()
@@ -277,6 +287,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns the HTTP protocol version the request was made with.
+     *
      * @return string
      */
     public function getProtocol()
@@ -285,6 +297,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns whether the request method is considered idempotent.
+     *
      * @return bool
      */
     public function isSafeMethod()
@@ -293,15 +307,19 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns whether the User Agent matches the passed regular expression.
+     *
      * @param string $expr
      * @return bool
      */
     public function isUserAgentLike($expr)
     {
-        return preg_match("/$expr/i", $this->getUserAgent()) === 1;
+        return preg_match($expr, $this->getUserAgent()) === 1;
     }
 
     /**
+     * Returns the User Agent sent with the request.
+     *
      * @return string
      */
     public function getUserAgent()
@@ -332,6 +350,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns whether the content body contains encoded values.
+     *
      * @return bool
      */
     public function isFormData()
@@ -353,6 +373,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns the HTTP method used to make the request.
+     *
      * @return string
      */
     public function getMethod()
@@ -361,6 +383,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns the MIME type of the content sent with the request, if any.
+     *
      * @return string|null
      */
     public function getContentType()
@@ -386,15 +410,18 @@ class Request extends MessageAbstract
     /**
      * Returns an array of ETags sent with the Request.
      *
-     * @see Symfony\Component\HttpFoundation\Request::getETags
+     * @see Symfony\Component\HttpFoundation\Request::getETags()
      * @return array
      */
     public function getETags()
     {
-        return preg_split('/\s*,\s*/', $this->getHeader("HTTP_IF_NONE_MATCH"), null, PREG_SPLIT_NO_EMPTY);
+        return preg_split("/\\s*,\\s*/", $this->getHeader("HTTP_IF_NONE_MATCH"), null, PREG_SPLIT_NO_EMPTY);
     }
 
     /**
+     * Returns a GMT formatted time string with the last known modification time
+     * of a resource, if any.
+     *
      * @return string|null
      */
     public function getModifiedSince()
@@ -403,6 +430,9 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns the charset used to encode the content sent with the request,
+     * if any.
+     *
      * @return string|null
      */
     public function getContentCharset()
@@ -434,6 +464,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns the length of the content sent with the request, if any.
+     *
      * @return int
      */
     public function getContentLength()
@@ -450,6 +482,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns the hostname of the current server
+     *
      * @return string
      */
     public function getHost()
@@ -463,6 +497,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns the port on the current server which received the request.
+     *
      * @return int
      */
     public function getPort()
@@ -472,6 +508,7 @@ class Request extends MessageAbstract
 
     /**
      * Get Path (physical path + virtual path)
+     *
      * @return string
      */
     public function getPath()
@@ -505,6 +542,7 @@ class Request extends MessageAbstract
 
     /**
      * Get URL (scheme + host [ + port if non-standard ])
+     *
      * @return string
      */
     public function getUrl()
@@ -517,6 +555,8 @@ class Request extends MessageAbstract
     }
 
     /**
+     * Returns the URL protocol schema used to make the request.
+     *
      * @return string
      */
     public function getScheme()

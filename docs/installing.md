@@ -2,8 +2,8 @@
 
 ## System Requirements
 
-* PHP5.3.0
-* Apache, or some other web server
+* PHP 5.3 or greater
+* Apache or a web server which supports URL rewriting
 
 
 ## Installation

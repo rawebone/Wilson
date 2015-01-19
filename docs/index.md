@@ -1,12 +1,12 @@
 # Wilson Documentation
 
 Wilson is a lightweight web framework designed to provide a fast, consistent and
-simple system for developing RESTful APIs. Its development principles are:
+simple system for developing web applications. Its development principles are:
 
 * **Performance**
   The framework does the least amount of work possible to get you from A to B
   and has been written to reduce the % of time consumed per request to its
-  lowest possible level. 
+  lowest reasonable level. 
 
 * **Testability**
   A lot of Micro-frameworks focus more on the routing technology and not enough

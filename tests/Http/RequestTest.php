@@ -68,7 +68,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $req->mock(array("HTTP_USER_AGENT" => "Blah"));
 
         $this->assertEquals("Blah", $req->getUserAgent());
-        $this->assertTrue($req->isUserAgentLike("^Blah$"));
+        $this->assertTrue($req->isUserAgentLike("/^Blah$/"));
     }
 
     function testGetFiles()

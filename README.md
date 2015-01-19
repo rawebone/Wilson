@@ -9,13 +9,11 @@
 [![Quality Score](https://img.shields.io/scrutinizer/g/rawebone/Wilson.svg?style=flat-square)](https://scrutinizer-ci.com/g/rawebone/Wilson)
 [![Total Downloads](https://img.shields.io/packagist/dt/rawebone/wilson.svg?style=flat-square)](https://packagist.org/packages/rawebone/wilson)
 
-Wilson is a PHP Micro framework aimed at providing methodologies associated with
-full stack frameworks without the performance penalties, those being:
+Wilson is a PHP micro framework designed for simplicity and performance. It main features are: 
 
 * Annotation based routing
 * Service Location
-* A lightweight HTTP abstraction based off of that available in
-  [Slim](http://www.slimframework.com/)
+* Request/Response abstraction
 
 
 ## Usage
@@ -30,7 +28,7 @@ At a glance, an application in the framework looks like this:
 require_once "/path/to/vendor/autoload.php";
 
 $api = new Wilson\Api();
-$api->resources = array( "My\Restful\ResourceA" );
+$api->resources = array("My\Restful\ResourceA");
 $api->dispatch();
 
 ```
@@ -60,14 +58,6 @@ class ResourceA
 ```
 
 Look at the [docs](docs/index.md) for a proper guide through the functionality.
-
-
-## TODO
-
-* Improve Test Coverage
-* Add Cookie handling from Slim
-* Add File handling
-* Complete implementation of HTTP Caching
 
 
 ## Credits
