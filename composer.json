@@ -1,7 +1,19 @@
 {
     "name": "rawebone/wilson",
-    "description": "A Resource Orientated Framework for designing RESTful APIs",
-    "keywords": [ "REST", "routing", "testable" ],
+    "description": "A PHP micro framework designed for simplicity and performance",
+    "keywords": [
+        "micro",
+        "framework",
+        "REST",
+        "router",
+        "routing",
+        "testing",
+        "testable",
+        "service location",
+        "sl",
+        "service",
+        "http"
+    ],
     "license": "MIT",
     "authors": [
         {
