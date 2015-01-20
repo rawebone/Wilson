@@ -52,7 +52,7 @@ class ResourceA
     
     /**
      * @route GET /resource-a/{file}.md
-     * @where file [a-z]
+     * @where file [a-z]+
      */
     function getRecord($request, $response, $services)
     {
