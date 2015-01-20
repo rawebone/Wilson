@@ -47,11 +47,17 @@ class ResourceA
      */
     function getCollection($request, $response, $services)
     {
-        $data = array("a", "b", "c");
-        
-        $response->setStatus(200);
-        $response->setHeader("Content-Type", "application/json");
-        $response->setBody(json_encode($data));
+        $response->json(array("a", "b", "c"));
+    }
+    
+    /**
+     * @route GET /resource-a/{file}.md
+     * @where file [a-z]
+     */
+    function getRecord($request, $response, $services)
+    {
+        $response->setBody(get_file($request->getParam("file")));
+        $response->setHeader("Content-Type", "text/plain");
     }
 }
 

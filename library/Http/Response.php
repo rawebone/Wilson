@@ -137,30 +137,8 @@ class Response extends MessageAbstract
     protected $status = 200;
 
     /**
-     * @return bool
-     */
-    public function isOk()
-    {
-        return $this->status === 200;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isSuccess()
-    {
-        return $this->status >= 200 && $this->status < 300;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isRedirection()
-    {
-        return $this->status >= 300 && $this->status < 400;
-    }
-
-    /**
+     * Returns whether the status is in the Client Error range.
+     *
      * @return bool
      */
     public function isClientError()
@@ -169,6 +147,77 @@ class Response extends MessageAbstract
     }
 
     /**
+     * Returns whether the status is in the Informational range.
+     *
+     * @return bool
+     */
+    public function isInformational()
+    {
+        return $this->status >= 100 && $this->status < 200;
+    }
+
+    /**
+     * Determines if the requested resource has been modified since the
+     * last request, allowing us to optimise the response. This is based
+     * off of Symfony\Component\HttpFoundation\Response::isNotModified().
+     *
+     * @param Request $request
+     * @return boolean
+     */
+    public function isNotModified(Request $request)
+    {
+        if (!$request->isSafeMethod()) {
+            return false;
+        }
+
+        $notModified = false;
+        $lastModified = $this->getHeader("Last-Modified");
+        $modifiedSince = $request->getModifiedSince();
+
+        if (($eTags = $request->getETags())) {
+            $notModified = in_array($this->getHeader("ETag"), $eTags) || in_array("*", $eTags);
+        }
+
+        if ($modifiedSince && $lastModified) {
+            $notModified = strtotime($modifiedSince) >= strtotime($lastModified) && (!$eTags || $notModified);
+        }
+
+        return $notModified;
+    }
+
+    /**
+     * Returns whether the request status is 200.
+     *
+     * @return bool
+     */
+    public function isOk()
+    {
+        return $this->status === 200;
+    }
+
+    /**
+     * Returns whether the status is in the Successful range.
+     *
+     * @return bool
+     */
+    public function isSuccess()
+    {
+        return $this->status >= 200 && $this->status < 300;
+    }
+
+    /**
+     * Returns whether the status is in the Redirection range.
+     *
+     * @return bool
+     */
+    public function isRedirection()
+    {
+        return $this->status >= 300 && $this->status < 400;
+    }
+
+    /**
+     * Returns whether the status is in the Server Error range.
+     *
      * @return bool
      */
     public function isServerError()
@@ -177,62 +226,14 @@ class Response extends MessageAbstract
     }
 
     /**
-     * @param string $url
-     * @param int $status
-     * @return void
+     * Get message for HTTP status code.
+     *
+     * @return string|null
      */
-    public function setRedirect($url, $status = 302)
+    public function getMessage()
     {
-        $this->setStatus($status);
-        $this->setHeader("Location", $url);
-    }
-
-    /**
-     * @param \DateTime $date
-     * @return void
-     */
-    public function setExpires(\DateTime $date = null)
-    {
-        if ($date === null) {
-            $this->unsetHeader("Expires");
-
-        } else {
-            $date = clone $date;
-            $date->setTimezone(new \DateTimeZone("UTC"));
-            $this->setHeader("Expires", $date->format("D, d M Y H:i:s T"));
-        }
-    }
-
-    /**
-     * @param \DateTime $date
-     * @return void
-     */
-    public function setLastModified(\DateTime $date = null)
-    {
-        if ($date === null) {
-            $this->unsetHeader("Last-Modified");
-
-        } else {
-            $date = clone $date;
-            $date->setTimezone(new \DateTimeZone("UTC"));
-            $this->setHeader("Last-Modified", $date->format("D, d M Y H:i:s T"));
-        }
-    }
-
-    /**
-     * @param string|null $value
-     * @param bool $weak
-     * @return void
-     */
-    public function setETag($value = null, $weak = false)
-    {
-        if ($value === null) {
-            $this->unsetHeader("ETag");
-
-        } else {
-            $tag = ($weak ? "W/" : "") . "\"$value\"";
-            $this->setHeader("ETag", $tag);
-        }
+        $status = $this->status;
+        return isset(self::$messages[$status]) ? self::$messages[$status] : null;
     }
 
     /**
@@ -243,6 +244,80 @@ class Response extends MessageAbstract
     public function getProtocol()
     {
         return $this->protocol;
+    }
+
+    /**
+     * Returns the status of the response.
+     *
+     * @return int
+     */
+    public function getStatus()
+    {
+        return $this->status;
+    }
+
+    /**
+     * Helper method to set the values of the response appropriate for a JSON
+     * message. The inspiration for this method came from the Symfony
+     * JsonResponse.
+     *
+     * @see Symfony\Component\HttpFoundation\JsonResponse
+     *
+     * @param mixed $data
+     * @param int $status
+     * @param array $headers
+     * @param int $options
+     * @return void
+     */
+    public function json($data, $status = 200, array $headers = array(), $options = 0)
+    {
+        $this->setStatus($status);
+
+        // Only set Content Type if not already set by the user.
+        if (!isset($headers["Content-Type"])) {
+            $headers["Content-Type"] = "application/json";
+        }
+        $this->setHeaders($headers);
+
+        // Encode <, >, ', &, and " for RFC4627-compliant JSON, which may also be embedded into HTML.
+        $opts = $options ?: JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
+        $this->setBody(json_encode($data, $opts));
+    }
+
+    /**
+     * Helper method to set all of the values of the response.
+     *
+     * @param string|callable $content
+     * @param int $status
+     * @param array $headers
+     * @return void
+     */
+    public function make($content, $status = 200, array $headers = array())
+    {
+        $this->setStatus($status);
+        $this->setBody($content);
+        $this->setHeaders($headers);
+    }
+
+    /**
+     * Sets the response to report not modified.
+     *
+     * @return void
+     */
+    public function notModified()
+    {
+        $this->setStatus(304);
+
+        // These headers are not allowed to be included with a 304 response
+        $this->unsetHeaders(array(
+            "Allow",
+            "Content-Encoding",
+            "Content-Language",
+            "Content-Length",
+            "Content-MD5",
+            "Content-Type",
+            "Last-Modified"
+        ));
     }
 
     /**
@@ -279,84 +354,21 @@ class Response extends MessageAbstract
     }
 
     /**
-     * Determines if the requested resource has been modified since the
-     * last request, allowing us to optimise the response. This is based
-     * off of Symfony\Component\HttpFoundation\Response::isNotModified().
+     * Sets the response to redirect to the given location.
      *
-     * @param Request $request
-     * @return boolean
+     * @param string $location
+     * @param int $status
+     * @return void
      */
-    public function isNotModified(Request $request)
+    public function redirect($location, $status = 302)
     {
-        if (!$request->isSafeMethod()) {
-            return false;
-        }
-
-        $notModified = false;
-        $lastModified = $this->getHeader("Last-Modified");
-        $modifiedSince = $request->getModifiedSince();
-
-        if (($eTags = $request->getETags())) {
-            $notModified = in_array($this->getHeader("ETag"), $eTags) || in_array("*", $eTags);
-        }
-
-        if ($modifiedSince && $lastModified) {
-            $notModified = strtotime($modifiedSince) >= strtotime($lastModified) && (!$eTags || $notModified);
-        }
-
-        return $notModified;
+        $this->setStatus($status);
+        $this->setHeader("Location", $location);
     }
 
     /**
-     * Match the HTTP protocol.
+     * Sends the response headers and body to the client.
      *
-     * @param Request $request
-     */
-    public function checkProtocol(Request $request)
-    {
-        if ($this->protocol !== $request->getProtocol()) {
-            $this->protocol = $request->getProtocol();
-        }
-    }
-
-    /**
-     * On the older HTTP protocol we need to send more cache headers.
-     */
-    public function checkCacheControl()
-    {
-        if ($this->protocol === "HTTP/1.0" && $this->getHeader("Cache-Control") === "no-cache") {
-            $this->setHeaders(array("Pragma" => "no-cache", "Expires" => -1));
-        }
-    }
-
-    /**
-     * Converts to a valid Not Modified response.
-     */
-    public function notModified()
-    {
-        $this->setStatus(304);
-
-        // These headers are not allowed to be included with a 304 response
-        $this->unsetHeaders(array(
-            "Allow",
-            "Content-Encoding",
-            "Content-Language",
-            "Content-Length",
-            "Content-MD5",
-            "Content-Type",
-            "Last-Modified"
-        ));
-    }
-
-    /**
-     * @return bool
-     */
-    public function isInformational()
-    {
-        return $this->status >= 100 && $this->status < 200;
-    }
-
-    /**
      * @return void
      */
     public function send()
@@ -364,7 +376,7 @@ class Response extends MessageAbstract
         if (headers_sent() === false) {
             // Send status
             $format = (strpos(PHP_SAPI, "cgi") === 0 ? "Status: %s" : "$this->protocol %s");
-            header(sprintf($format, static::getMessageForCode($this->getStatus())));
+            header(sprintf($format, $this->getMessage()));
 
             // Send headers
             foreach ($this->getHeaders() as $name => $value) {
@@ -376,42 +388,62 @@ class Response extends MessageAbstract
     }
 
     /**
+     * Sets the date at which the content will expire.
+     *
+     * @param \DateTime $date
      * @return void
      */
-    public function sendContent()
+    public function setExpires(\DateTime $date = null)
     {
-        $body = $this->getBody();
-        if (is_callable($body)) {
-            call_user_func($body);
+        if ($date === null) {
+            $this->unsetHeader("Expires");
 
         } else {
-            echo $body;
+            $date = clone $date;
+            $date->setTimezone(new \DateTimeZone("UTC"));
+            $this->setHeader("Expires", $date->format("D, d M Y H:i:s T"));
         }
     }
 
     /**
-     * Get message for HTTP status code
-     * @param int $status
-     * @return string|null
+     * Sets the last modified date of the content.
+     *
+     * @param \DateTime $date
+     * @return void
      */
-    public static function getMessageForCode($status)
+    public function setLastModified(\DateTime $date = null)
     {
-        if (isset(self::$messages[$status])) {
-            return self::$messages[$status];
+        if ($date === null) {
+            $this->unsetHeader("Last-Modified");
+
         } else {
-            return null;
+            $date = clone $date;
+            $date->setTimezone(new \DateTimeZone("UTC"));
+            $this->setHeader("Last-Modified", $date->format("D, d M Y H:i:s T"));
         }
     }
 
     /**
-     * @return int
+     * Sets the ETag value of the content.
+     *
+     * @param string|null $value
+     * @param bool $weak
+     * @return void
      */
-    public function getStatus()
+    public function setETag($value = null, $weak = false)
     {
-        return $this->status;
+        if ($value === null) {
+            $this->unsetHeader("ETag");
+
+        } else {
+            $tag = ($weak ? "W/" : "") . "\"$value\"";
+            $this->setHeader("ETag", $tag);
+        }
     }
 
     /**
+     * Sets the status of the response.
+     *
      * @param int $status
      * @throws \InvalidArgumentException
      */
@@ -421,6 +453,47 @@ class Response extends MessageAbstract
 
         if ($this->status < 100 || $this->status > 600) {
             throw new \InvalidArgumentException("HTTP Status $this->status is invalid!");
+        }
+    }
+
+    /**
+     * Match the HTTP protocol of the request.
+     *
+     * @param Request $request
+     * @return void
+     */
+    protected function checkProtocol(Request $request)
+    {
+        if ($this->protocol !== $request->getProtocol()) {
+            $this->protocol = $request->getProtocol();
+        }
+    }
+
+    /**
+     * On the older HTTP protocol we need to send more cache headers.
+     *
+     * @return void
+     */
+    protected function checkCacheControl()
+    {
+        if ($this->protocol === "HTTP/1.0" && $this->getHeader("Cache-Control") === "no-cache") {
+            $this->setHeaders(array("Pragma" => "no-cache", "Expires" => -1));
+        }
+    }
+
+    /**
+     * Sends the body of the response to the client.
+     *
+     * @return void
+     */
+    protected function sendContent()
+    {
+        $body = $this->getBody();
+        if (is_callable($body)) {
+            call_user_func($body);
+
+        } else {
+            echo $body;
         }
     }
 }

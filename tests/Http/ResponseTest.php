@@ -57,8 +57,13 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
 
     function testGetMessage()
     {
-        $this->assertEquals("200 OK", Response::getMessageForCode(200));
-        $this->assertNull(Response::getMessageForCode(99));
+        $response = new Response();
+
+        $response->setStatus(200);
+        $this->assertEquals("200 OK", $response->getMessage());
+
+        $response->setStatus(199);
+        $this->assertNull($response->getMessage());
     }
 
     function testSetRedirect()
@@ -66,12 +71,12 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $url = "blah.com";
 
         $resp = new Response();
-        $resp->setRedirect($url);
+        $resp->redirect($url);
 
         $this->assertEquals($url, $resp->getHeader("Location"));
         $this->assertEquals(302, $resp->getStatus());
 
-        $resp->setRedirect($url, 200);
+        $resp->redirect($url, 200);
         $this->assertEquals(200, $resp->getStatus());
     }
 
@@ -121,8 +126,11 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $resp = new Response();
         $resp->setBody(function () { echo "Hello"; });
 
+        $proxy = new ResponseProxy();
+        $proxy->setInstance($resp);
+
         ob_start();
-        $resp->sendContent();
+        $proxy->sendContent();
         $this->assertEquals("Hello", ob_get_clean());
     }
 
@@ -131,8 +139,11 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $resp = new Response();
         $resp->setBody("Hello");
 
+        $proxy = new ResponseProxy();
+        $proxy->setInstance($resp);
+
         ob_start();
-        $resp->sendContent();
+        $proxy->sendContent();
         $this->assertEquals("Hello", ob_get_clean());
     }
 
@@ -275,7 +286,10 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $response = new Response();
         $this->assertEquals("HTTP/1.1", $response->getProtocol());
 
-        $response->checkProtocol($request);
+        $proxy = new ResponseProxy();
+        $proxy->setInstance($response);
+
+        $proxy->checkProtocol($request);
         $this->assertEquals("HTTP/1.0", $response->getProtocol());
     }
 
@@ -290,9 +304,92 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $response->setHeader("Cache-Control", "no-cache");
         $response->prepare($request);
 
-        $response->checkCacheControl();
+        $proxy = new ResponseProxy();
+        $proxy->setInstance($response);
+        $proxy->checkCacheControl();
 
         $this->assertEquals("no-cache", $response->getHeader("Pragma"));
         $this->assertEquals(-1, $response->getHeader("Expires"));
+    }
+
+    function testMake()
+    {
+        $response = new Response();
+        $response->make("abc", 302, array("blah" => 123));
+
+        $this->assertEquals("abc", $response->getBody());
+        $this->assertEquals(302, $response->getStatus());
+        $this->assertEquals(123, $response->getHeader("blah"));
+    }
+
+    function testEmptyJsonResponse()
+    {
+        $response = new Response();
+        $response->json("");
+
+        $this->assertEquals('""', $response->getBody());
+        $this->assertEquals("application/json", $response->getHeader("Content-Type"));
+        $this->assertEquals(200, $response->getStatus());
+    }
+
+    function testEmptyJsonResponseWithCustomType()
+    {
+        $response = new Response();
+        $response->json("", 200, array("Content-Type" => "application/problem+json"));
+
+        $this->assertEquals('""', $response->getBody());
+        $this->assertEquals("application/problem+json", $response->getHeader("Content-Type"));
+        $this->assertEquals(200, $response->getStatus());
+    }
+
+    function testJsonWithArray()
+    {
+        $response = new Response();
+        $response->json(array(0, 1, 2, 3));
+
+        $this->assertEquals("[0,1,2,3]", $response->getBody());
+    }
+
+    function testJsonWithAssocArrayCreatesJsonObject()
+    {
+        $response = new Response();
+        $response->json(array("foo" => "bar"));
+
+        $this->assertEquals('{"foo":"bar"}', $response->getBody());
+    }
+
+    function testJsonWithSimpleTypes()
+    {
+        $response = new Response();
+
+        $response->json("foo");
+        $this->assertSame('"foo"', $response->getBody());
+
+        $response->json(0);
+        $this->assertSame('0', $response->getBody());
+
+        $response->json(0.1);
+        $this->assertSame('0.1', $response->getBody());
+
+        $response->json(true);
+        $this->assertSame('true', $response->getBody());
+    }
+}
+
+/**
+ * Allows us to test protected function calls.
+ */
+class ResponseProxy extends Response
+{
+    private $proxied;
+
+    function setInstance(Response $response)
+    {
+        $this->proxied = $response;
+    }
+
+    function __call($name, array $args)
+    {
+        return call_user_func_array(array($this->proxied, $name), $args);
     }
 }
