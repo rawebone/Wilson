@@ -14,6 +14,8 @@ namespace Wilson;
 use Exception;
 use Wilson\Http\Request;
 use Wilson\Http\Response;
+use Wilson\Http\Sender;
+use Wilson\Routing\Dispatcher;
 use Wilson\Routing\Router;
 use Wilson\Routing\UrlTools;
 use Wilson\Utils\Cache;
@@ -27,6 +29,13 @@ class Api
      * @var string
      */
     public $cacheFile;
+
+    /**
+     * Allows us to override the framework creating a dispatcher instance.
+     *
+     * @var Dispatcher|null
+     */
+    public $dispatcher;
 
     /**
      * Defines a callable which will be used to handle any errors during dispatch.
@@ -213,71 +222,14 @@ class Api
         $this->lastRequest = $request;
         $this->lastResponse = $response;
 
-        $router = new Router(new Cache($this->cacheFile), new UrlTools());
+        if (!$this->dispatcher) {
+            $router = new Router(new Cache($this->cacheFile), new UrlTools());
+            $dispatcher = new Dispatcher($router, new Sender());
 
-        try {
-            call_user_func($this->prepare, $request, $response);
-            $this->services->initialise($request, $response);
-
-            $this->routeRequest($router, $request, $response);
-
-        } catch (\Exception $exception) {
-            call_user_func($this->error, $request, $response, $this->services, $exception);
+        } else {
+            $dispatcher = $this->dispatcher;
         }
 
-        if (!$this->testing) {
-            $response->prepare($request);
-            $response->send();
-        }
-    }
-
-    /**
-     * Routes the request the handler most appropriate.
-     *
-     * @see dispatch
-     * @param Router $router
-     * @param Request $request
-     * @param Response $response
-     * @return void
-     */
-    protected function routeRequest(Router $router, Request $request, Response $response)
-    {
-        $match = $router->match(
-            $this->resources,
-            $request->getMethod(),
-            $request->getPathInfo()
-        );
-
-        switch ($match->status) {
-            case Router::FOUND:
-                $request->setParams($match->params);
-
-                // Dispatch all middleware, abort if they return boolean false
-                foreach ($match->handlers as $handler) {
-                    // PHP5.3 does not like the array($obj, $method)() calling
-                    // convention so we have to use the slower call_user_func
-                    // method.
-                    $result = call_user_func(
-                        $handler,
-                        $request,
-                        $response,
-                        $this->services
-                    );
-
-                    if ($result === false) {
-                        return;
-                    }
-                }
-                break;
-
-            case Router::NOT_FOUND:
-                call_user_func($this->notFound, $request, $response, $this->services);
-                break;
-
-            case Router::METHOD_NOT_ALLOWED:
-                $response->setHeader("Allow", join(", ", $match->allowed));
-                $response->setStatus($request->getMethod() === "OPTIONS" ? 200 : 405);
-                break;
-        }
+        $dispatcher->dispatch($this, $request, $response);
     }
 }
