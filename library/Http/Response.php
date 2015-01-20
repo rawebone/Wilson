@@ -11,69 +11,21 @@
 
 namespace Wilson\Http;
 
-    /**
-     * This object has been derived from Slim framework in the main and Symfony
-     * HttpFoundation in other places. Their licences:
-     */
-
-    /**
-     * Slim - a micro PHP 5 framework
-     *
-     * @author      Josh Lockhart <info@slimframework.com>
-     * @copyright   2011 Josh Lockhart
-     * @link        http://www.slimframework.com
-     * @license     http://www.slimframework.com/license
-     * @version     2.4.2
-     * @package     Slim
-     *
-     * MIT LICENSE
-     *
-     * Permission is hereby granted, free of charge, to any person obtaining
-     * a copy of this software and associated documentation files (the
-     * "Software"), to deal in the Software without restriction, including
-     * without limitation the rights to use, copy, modify, merge, publish,
-     * distribute, sublicense, and/or sell copies of the Software, and to
-     * permit persons to whom the Software is furnished to do so, subject to
-     * the following conditions:
-     *
-     * The above copyright notice and this permission notice shall be
-     * included in all copies or substantial portions of the Software.
-     *
-     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-     * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-     * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-     * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-     * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-     * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-     * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-     */
-
 /**
- * Copyright (c) 2004-2014 Fabien Potencier
+ * Represents an HTTP Response Message.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is furnished
- * to do so, subject to the following conditions:
+ * This objects is derived from code taken from the Slim and Symfony frameworks.
+ * Their licences are included with this project and links are provided below:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * @link https://github.com/rawebone/Wilson/LICENSE.SLIM
+ * @link https://github.com/rawebone/Wilson/LICENSE.SYMFONY
  */
-
 class Response extends MessageAbstract
 {
     /**
-     * @var array HTTP response codes and messages
+     * HTTP response codes and messages.
+     *
+     * @var array
      */
     protected static $messages = array(
         // Informational 1xx
@@ -321,39 +273,6 @@ class Response extends MessageAbstract
     }
 
     /**
-     * Prepares the response for being sent back to the client.
-     * This is based off Symfony's HttpFoundation Response::prepare()
-     * method and Slim's Response sending.
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function prepare(Request $request)
-    {
-        if ($this->isNotModified($request)) {
-            $this->notModified();
-        }
-
-        // Fix output content
-        if ($this->isInformational()
-            || $request->getMethod() === "HEAD"
-            || $this->status === 204
-            || $this->status === 304
-        ) {
-            $this->unsetHeaders(array("Content-Type", "Content-Length"));
-            $this->setBody("");
-
-        } else {
-            if (is_string($body = $this->getBody())) {
-                $this->setHeader("Content-Length", strlen($body));
-            }
-        }
-
-        $this->checkProtocol($request);
-        $this->checkCacheControl();
-    }
-
-    /**
      * Sets the response to redirect to the given location.
      *
      * @param string $location
@@ -367,24 +286,21 @@ class Response extends MessageAbstract
     }
 
     /**
-     * Sends the response headers and body to the client.
+     * Sets the ETag value of the content.
      *
+     * @param string|null $value
+     * @param bool $weak
      * @return void
      */
-    public function send()
+    public function setETag($value = null, $weak = false)
     {
-        if (headers_sent() === false) {
-            // Send status
-            $format = (strpos(PHP_SAPI, "cgi") === 0 ? "Status: %s" : "$this->protocol %s");
-            header(sprintf($format, $this->getMessage()));
+        if ($value === null) {
+            $this->unsetHeader("ETag");
 
-            // Send headers
-            foreach ($this->getHeaders() as $name => $value) {
-                header("$name: $value");
-            }
+        } else {
+            $tag = ($weak ? "W/" : "") . "\"$value\"";
+            $this->setHeader("ETag", $tag);
         }
-
-        $this->sendContent();
     }
 
     /**
@@ -424,21 +340,14 @@ class Response extends MessageAbstract
     }
 
     /**
-     * Sets the ETag value of the content.
+     * Sets the protocol that the response should conform to.
      *
-     * @param string|null $value
-     * @param bool $weak
+     * @param string $protocol
      * @return void
      */
-    public function setETag($value = null, $weak = false)
+    public function setProtocol($protocol)
     {
-        if ($value === null) {
-            $this->unsetHeader("ETag");
-
-        } else {
-            $tag = ($weak ? "W/" : "") . "\"$value\"";
-            $this->setHeader("ETag", $tag);
-        }
+        $this->protocol = $protocol;
     }
 
     /**
@@ -453,47 +362,6 @@ class Response extends MessageAbstract
 
         if ($this->status < 100 || $this->status > 600) {
             throw new \InvalidArgumentException("HTTP Status $this->status is invalid!");
-        }
-    }
-
-    /**
-     * Match the HTTP protocol of the request.
-     *
-     * @param Request $request
-     * @return void
-     */
-    protected function checkProtocol(Request $request)
-    {
-        if ($this->protocol !== $request->getProtocol()) {
-            $this->protocol = $request->getProtocol();
-        }
-    }
-
-    /**
-     * On the older HTTP protocol we need to send more cache headers.
-     *
-     * @return void
-     */
-    protected function checkCacheControl()
-    {
-        if ($this->protocol === "HTTP/1.0" && $this->getHeader("Cache-Control") === "no-cache") {
-            $this->setHeaders(array("Pragma" => "no-cache", "Expires" => -1));
-        }
-    }
-
-    /**
-     * Sends the body of the response to the client.
-     *
-     * @return void
-     */
-    protected function sendContent()
-    {
-        $body = $this->getBody();
-        if (is_callable($body)) {
-            call_user_func($body);
-
-        } else {
-            echo $body;
         }
     }
 }
