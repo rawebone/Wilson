@@ -68,10 +68,18 @@ Look at the [wiki](https://github.com/rawebone/Wilson/wiki) for a proper guide t
 
 ## Credits
 
+This framework is a patchwork consisting of the ideas and pieces of code from
+numerous other projects:
+
 * Josh Lockhart and other contributors to [Slim Framework](http://www.slimframework.com)
 * Fabien Potencier and other contributors to [Symfony](http://symfony.com)
+* Matthew Weier O'Phinney and other contributors to [phly/http](https://github.com/phly/http)
 
 
 ## License
 
-[MIT License](LICENSE), go hog wild.
+The code is under the [MIT license](LICENSE). Third party code licences:
+
+* [Symfony](LICENSE.SYMFONY) (MIT)
+* [Slim](LICENSE.SLIM) (MIT)
+* [phly/http](LICENCE.PHLY) (BSD-2-Clause)
