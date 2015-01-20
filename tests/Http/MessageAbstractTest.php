@@ -33,6 +33,11 @@ class MessageAbstractTest extends \PHPUnit_Framework_TestCase
 
         $msg->unsetHeaders(array("Blah"));
         $this->assertEmpty($msg->getHeaders());
+
+        $msg->setHeader("abc", 123);
+        $msg->setAllHeaders(array("def" => 456));
+        $this->assertNull($msg->getHeader("abc"));
+        $this->assertEquals(456, $msg->getHeader("def"));
     }
 
     function testGetSetBody()
@@ -56,16 +61,21 @@ class MessageAbstractTest extends \PHPUnit_Framework_TestCase
 
     function testParams()
     {
-        $req = new Message();
+        $msg = new Message();
 
-        $req->setParam("Blah", "blah");
-        $this->assertEquals("blah", $req->getParam("Blah"));
+        $msg->setParam("Blah", "blah");
+        $this->assertEquals("blah", $msg->getParam("Blah"));
 
-        $req->unsetParam("Blah");
-        $this->assertEquals(null, $req->getParam("Blah"));
+        $msg->unsetParam("Blah");
+        $this->assertEquals(null, $msg->getParam("Blah"));
 
-        $req->setParams($params = array("Blah" => "blady"));
-        $this->assertEquals($params, $req->getParams());
+        $msg->setParams($params = array("Blah" => "blady"));
+        $this->assertEquals($params, $msg->getParams());
+
+        $msg->setParam("abc", 123);
+        $msg->setAllParams(array("def" => 456));
+        $this->assertNull($msg->getParam("abc"));
+        $this->assertEquals(456, $msg->getParam("def"));
     }
 }
 

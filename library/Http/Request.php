@@ -184,8 +184,8 @@ class Request extends MessageAbstract
 
         $this->buildServerInfo($server);
         $this->buildPaths($server);
-        $this->setHeaders($server);
-        $this->setParams(array_merge($get, $post));
+        $this->setAllHeaders($server);
+        $this->setAllParams(array_merge($get, $post));
 
         // Method Override
         if (($original = $this->getHeader("HTTP_X_HTTP_METHOD_OVERRIDE"))) {

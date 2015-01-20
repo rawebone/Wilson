@@ -70,6 +70,30 @@ abstract class MessageAbstract
     private $params = array();
 
     /**
+     * Returns the body of the message.
+     *
+     * @return string|callable
+     */
+    public function getBody()
+    {
+        return $this->body;
+    }
+
+    /**
+     * Returns the value of a header by name.
+     *
+     * @param string $name
+     * @param mixed $default
+     * @return mixed
+     */
+    public function getHeader($name, $default = null)
+    {
+        return isset($this->headers[$name]) ? $this->headers[$name] : $default;
+    }
+
+    /**
+     * Returns all headers.
+     *
      * @return array
      */
     public function getHeaders()
@@ -78,29 +102,8 @@ abstract class MessageAbstract
     }
 
     /**
-     * @param array $headers
-     * @return void
-     */
-    public function setHeaders(array $headers)
-    {
-        $this->headers = $headers;
-    }
-
-    /**
-     * @param string $name
-     * @param mixed $default
-     * @return mixed
-     */
-    public function getHeader($name, $default = null)
-    {
-        if ($this->hasHeader($name)) {
-            return $this->headers[$name];
-        }
-
-        return $default;
-    }
-
-    /**
+     * Returns whether a header has been set.
+     *
      * @param string $name
      * @return bool
      */
@@ -110,42 +113,52 @@ abstract class MessageAbstract
     }
 
     /**
+     * Returns a request parameter, or the default.
+     *
      * @param string $name
-     * @param mixed $value
+     * @param mixed $default
+     * @return mixed
+     */
+    public function getParam($name, $default = null)
+    {
+        return isset($this->params[$name]) ? $this->params[$name] : $default;
+    }
+
+    /**
+     * Returns all defined parameters.
+     *
+     * @return array
+     */
+    public function getParams()
+    {
+        return $this->params;
+    }
+
+    /**
+     * Sets all headers, overwriting any already set.
+     *
+     * @param array $headers
      * @return void
      */
-    public function setHeader($name, $value)
+    public function setAllHeaders(array $headers)
     {
-        $this->headers[$name] = $value;
+        $this->headers = $headers;
     }
 
     /**
-     * @param string $name
+     * Sets all parameters, overwriting any previously set.
+     *
+     * @param array $params
+     * @return void
      */
-    public function unsetHeader($name)
+    public function setAllParams(array $params)
     {
-        unset($this->headers[$name]);
+        $this->params = $params;
     }
 
     /**
-     * @param array $names
-     */
-    public function unsetHeaders(array $names)
-    {
-        foreach ($names as $name) {
-            unset($this->headers[$name]);
-        }
-    }
-
-    /**
-     * @return string|callable
-     */
-    public function getBody()
-    {
-        return $this->body;
-    }
-
-    /**
+     * Sets the body of the message.
+     *
      * @param string|callable $content
      * @return void
      */
@@ -158,55 +171,88 @@ abstract class MessageAbstract
         $this->body = $content;
     }
 
-
     /**
-     * Returns a request parameter, or the default.
+     * Sets a header by name.
      *
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
-     */
-    public function getParam($key, $default = null)
-    {
-        return isset($this->params[$key]) ? $this->params[$key] : $default;
-    }
-
-    /**
-     * @param string $key
+     * @param string $name
+     * @param mixed $value
      * @return void
      */
-    public function unsetParam($key)
+    public function setHeader($name, $value)
     {
-        unset($this->params[$key]);
+        $this->headers[$name] = $value;
     }
 
     /**
-     * @return array
+     * Sets headers, adding to the headers already set.
+     *
+     * @param array $headers
+     * @return void
      */
-    public function getParams()
+    public function setHeaders(array $headers)
     {
-        return $this->params;
+        foreach ($headers as $name => $value) {
+            $this->headers[$name] = $value;
+        }
     }
 
     /**
+     * Sets a message parameter.
+     *
+     * @param string $name
+     * @param mixed $value
+     * @return void
+     */
+    public function setParam($name, $value)
+    {
+        $this->params[$name] = $value;
+    }
+
+    /**
+     * Sets message parameters, appending to those already set.
+     *
      * @param array $params
      * @return void
      */
     public function setParams(array $params)
     {
-        $this->params = $params;
+        foreach ($params as $name => $value) {
+            $this->params[$name] = $value;
+        }
     }
 
     /**
-     * Sets a request parameter, if the value is null then the parameter will
-     * be unset.
+     * Clears a header by name.
      *
-     * @param string $key
-     * @param mixed $value
+     * @param string $name
      * @return void
      */
-    public function setParam($key, $value)
+    public function unsetHeader($name)
     {
-        $this->params[$key] = $value;
+        unset($this->headers[$name]);
+    }
+
+    /**
+     * Clears headers by name.
+     *
+     * @param array $names
+     * @return void
+     */
+    public function unsetHeaders(array $names)
+    {
+        foreach ($names as $name) {
+            unset($this->headers[$name]);
+        }
+    }
+
+    /**
+     * Removes a parameter from the message by name.
+     *
+     * @param string $name
+     * @return void
+     */
+    public function unsetParam($name)
+    {
+        unset($this->params[$name]);
     }
 }
