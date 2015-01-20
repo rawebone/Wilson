@@ -57,7 +57,7 @@ class ResourceA
 
 ```
 
-Look at the [docs](docs/index.md) for a proper guide through the functionality.
+Look at the [wiki](https://github.com/rawebone/Wilson/wiki) for a proper guide through the functionality.
 
 
 ## Credits
