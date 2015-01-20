@@ -171,30 +171,30 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("192.1.1.1", $req->getIp());
     }
 
-    function testGetMediaTypeWhenExists()
+    function testGetContentMimeTypeWhenExists()
     {
         $req = new Request();
         $req->mock(array(
             "HTTP_CONTENT_TYPE" => "application/json;charset=utf-8"
         ));
 
-        $this->assertEquals("application/json", $req->getMediaType());
+        $this->assertEquals("application/json", $req->getContentMimeType());
     }
 
-    function testGetMediaTypeWhenNotExists()
+    function testGetContentMimeTypeWhenNotExists()
     {
         $req = new Request();
-        $this->assertNull($req->getMediaType());
+        $this->assertNull($req->getContentMimeType());
     }
 
-    function testGetMediaTypeWhenNoParamsExist()
+    function testGetContentMimeTypeWhenNoParamsExist()
     {
         $req = new Request();
         $req->mock(array(
             "HTTP_CONTENT_TYPE" => "application/json"
         ));
 
-        $this->assertEquals("application/json", $req->getMediaType());
+        $this->assertEquals("application/json", $req->getContentMimeType());
     }
 
     function testGetHostFromHeader()
@@ -244,23 +244,23 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(10, $req->getContentLength());
     }
 
-    function testGetMediaTypeParams()
+    function testGetContentMimeTypeParameters()
     {
         $req = new Request();
         $req->mock(array(
             "HTTP_CONTENT_TYPE" => "application/json; charset=ISO-8859-4"
         ));
 
-        $params = $req->getMediaTypeParams();
+        $params = $req->getContentMimeTypeParameters();
         $this->assertEquals(1, count($params));
         $this->assertArrayHasKey("charset", $params);
         $this->assertEquals("ISO-8859-4", $params["charset"]);
     }
 
-    function testGetMediaTypeParamsWhenNotExists()
+    function testGetContentMimeTypeParametersWhenNotExists()
     {
         $req = new Request();
-        $params = $req->getMediaTypeParams();
+        $params = $req->getContentMimeTypeParameters();
 
         $this->assertTrue(is_array($params));
         $this->assertEquals(0, count($params));

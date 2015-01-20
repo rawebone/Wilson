@@ -358,7 +358,7 @@ class Request extends MessageAbstract
     {
         $method = $this->getOriginalMethod() ?: $this->getMethod();
 
-        return ($method === "POST" && is_null($this->getContentType())) || $this->getMediaType() ===
+        return ($method === "POST" && is_null($this->getContentType())) || $this->getContentMimeType() ===
             "application/x-www-form-urlencoded";
     }
 
@@ -393,11 +393,11 @@ class Request extends MessageAbstract
     }
 
     /**
-     * Get Media Type (type/subtype within Content Type header)
+     * Returns the MIME type of the
      *
      * @return string|null
      */
-    public function getMediaType()
+    public function getContentMimeType()
     {
         if (($contentType = $this->getContentType())) {
             $contentTypeParts = preg_split("/\\s*[;,]\\s*/", $contentType);
@@ -405,6 +405,53 @@ class Request extends MessageAbstract
         }
 
         return null;
+    }
+
+    /**
+     * Returns an array containing the parameters associated with the content,
+     * if any.
+     *
+     * @return array
+     */
+    public function getContentMimeTypeParameters()
+    {
+        $params = array();
+        if (($contentType = $this->getContentType())) {
+            $parts = preg_split("/\\s*[;,]\\s*/", $contentType);
+
+            for ($i = 1, $length = count($parts); $i < $length; $i++) {
+                $split = explode("=", $parts[$i]);
+                $params[strtolower($split[0])] = $split[1];
+            }
+        }
+
+        return $params;
+    }
+
+    /**
+     * Returns the charset used to encode the content sent with the request,
+     * if any.
+     *
+     * @return string|null
+     */
+    public function getContentCharset()
+    {
+        $params = $this->getContentMimeTypeParameters();
+        if (isset($params["charset"])) {
+            return $params["charset"];
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the length of the content sent with the request, if any.
+     *
+     * @return int
+     */
+    public function getContentLength()
+    {
+        return $this->getHeader("HTTP_CONTENT_LENGTH", 0);
     }
 
     /**
@@ -427,50 +474,6 @@ class Request extends MessageAbstract
     public function getModifiedSince()
     {
         return $this->getHeader("HTTP_IF_MODIFIED_SINCE");
-    }
-
-    /**
-     * Returns the charset used to encode the content sent with the request,
-     * if any.
-     *
-     * @return string|null
-     */
-    public function getContentCharset()
-    {
-        $mediaTypeParams = $this->getMediaTypeParams();
-        if (isset($mediaTypeParams["charset"])) {
-            return $mediaTypeParams["charset"];
-        }
-
-        return null;
-    }
-
-    /**
-     * @return array
-     */
-    public function getMediaTypeParams()
-    {
-        $params = array();
-        if (($contentType = $this->getContentType())) {
-            $parts = preg_split("/\\s*[;,]\\s*/", $contentType);
-
-            for ($i = 1, $length = count($parts); $i < $length; $i++) {
-                $paramParts = explode("=", $parts[$i]);
-                $params[strtolower($paramParts[0])] = $paramParts[1];
-            }
-        }
-
-        return $params;
-    }
-
-    /**
-     * Returns the length of the content sent with the request, if any.
-     *
-     * @return int
-     */
-    public function getContentLength()
-    {
-        return $this->getHeader("HTTP_CONTENT_LENGTH", 0);
     }
 
     /**
