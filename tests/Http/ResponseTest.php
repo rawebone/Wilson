@@ -124,27 +124,15 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
     function testSendContentViaCallable()
     {
         $resp = new Response();
-        $resp->setBody(function () { echo "Hello"; });
-
-        $proxy = new ResponseProxy();
-        $proxy->setInstance($resp);
-
-        ob_start();
-        $proxy->sendContent();
-        $this->assertEquals("Hello", ob_get_clean());
+        $resp->setBody($a = function () { echo "Hello"; });
+        $this->assertSame($a, $resp->getBody());
     }
 
     function testSendContentViaString()
     {
         $resp = new Response();
-        $resp->setBody("Hello");
-
-        $proxy = new ResponseProxy();
-        $proxy->setInstance($resp);
-
-        ob_start();
-        $proxy->sendContent();
-        $this->assertEquals("Hello", ob_get_clean());
+        $resp->setBody($a = "Hello");
+        $this->assertSame($a, $resp->getBody());
     }
 
     function testNotModified()
@@ -276,42 +264,6 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($response->isNotModified($request));
     }
 
-    function testCheckProtocol()
-    {
-        $request = new Request();
-        $request->mock(array(
-            "SERVER_PROTOCOL" => "HTTP/1.0"
-        ));
-
-        $response = new Response();
-        $this->assertEquals("HTTP/1.1", $response->getProtocol());
-
-        $proxy = new ResponseProxy();
-        $proxy->setInstance($response);
-
-        $proxy->checkProtocol($request);
-        $this->assertEquals("HTTP/1.0", $response->getProtocol());
-    }
-
-    function testCheckCacheControl()
-    {
-        $request = new Request();
-        $request->mock(array(
-            "SERVER_PROTOCOL" => "HTTP/1.0"
-        ));
-
-        $response = new Response();
-        $response->setHeader("Cache-Control", "no-cache");
-        $response->prepare($request);
-
-        $proxy = new ResponseProxy();
-        $proxy->setInstance($response);
-        $proxy->checkCacheControl();
-
-        $this->assertEquals("no-cache", $response->getHeader("Pragma"));
-        $this->assertEquals(-1, $response->getHeader("Expires"));
-    }
-
     function testMake()
     {
         $response = new Response();
@@ -374,22 +326,13 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $response->json(true);
         $this->assertSame('true', $response->getBody());
     }
-}
 
-/**
- * Allows us to test protected function calls.
- */
-class ResponseProxy extends Response
-{
-    private $proxied;
-
-    function setInstance(Response $response)
+    function testGetSetProtocol()
     {
-        $this->proxied = $response;
-    }
+        $response = new Response();
+        $this->assertEquals("HTTP/1.1", $response->getProtocol());
 
-    function __call($name, array $args)
-    {
-        return call_user_func_array(array($this->proxied, $name), $args);
+        $response->setProtocol("HTTP/1.0");
+        $this->assertEquals("HTTP/1.0", $response->getProtocol());
     }
 }
