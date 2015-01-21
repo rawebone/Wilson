@@ -335,4 +335,21 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $response->setProtocol("HTTP/1.0");
         $this->assertEquals("HTTP/1.0", $response->getProtocol());
     }
+
+    function testHtml()
+    {
+        $response = new Response();
+        $response->html("ABC");
+
+        $this->assertEquals(200, $response->getStatus());
+        $this->assertEquals("ABC", $response->getBody());
+        $this->assertEquals("text/html", $response->getHeader("Content-Type"));
+
+        $response->html("DEF", 404, array("Content-Type" => "text/xhtml"));
+
+        $this->assertEquals(404, $response->getStatus());
+        $this->assertEquals("DEF", $response->getBody());
+        $this->assertEquals("text/xhtml", $response->getHeader("Content-Type"));
+    }
+
 }

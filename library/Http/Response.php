@@ -209,6 +209,25 @@ class Response extends MessageAbstract
     }
 
     /**
+     * Helper method to set the response for HTML output.
+     *
+     * @param string|callable $content
+     * @param int $status
+     * @param array $headers
+     * @return void
+     */
+    public function html($content, $status = 200, array $headers = array())
+    {
+        $this->setStatus($status);
+        $this->setBody($content);
+
+        if (!isset($headers["Content-Type"])) {
+            $headers["Content-Type"] = "text/html";
+        }
+        $this->setHeaders($headers);
+    }
+
+    /**
      * Helper method to set the values of the response appropriate for a JSON
      * message. The inspiration for this method came from the Symfony
      * JsonResponse.
