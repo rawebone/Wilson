@@ -14,6 +14,7 @@ namespace Wilson\Tests\Http;
 use Wilson\Http\HeaderStack;
 use Wilson\Http\Request;
 use Wilson\Http\Response;
+use Wilson\Http\Sender;
 use Wilson\Tests\Fixtures\SenderProxy;
 
 class SenderTest extends \PHPUnit_Framework_TestCase
@@ -170,5 +171,51 @@ class SenderTest extends \PHPUnit_Framework_TestCase
         $this->assertEmpty($response->getBody());
         $this->assertNull($response->getHeader("Content-Type"));
         $this->assertNull($response->getHeader("Content-Length"));
+    }
+
+    function testPrepareWithNotModified()
+    {
+        $proxy = SenderProxy::sender();
+        $request = new Request();
+        $request->mock(array(
+            "HTTP_IF_MODIFIED_SINCE" => "Sun, 25 Aug 2013 18:33:31 GMT",
+        ));
+
+        $response = new Response();
+        $response->setStatus(204);
+        $response->setHeader("Content-Type", "blah");
+        $response->setHeader("Content-Length", 1);
+        $response->setLastModified(new \DateTime("Sun, 25 Aug 2013 18:32:31 GMT"));
+        $response->setBody("hello");
+
+        $proxy->prepare($request, $response);
+
+        $this->assertEquals(304, $response->getStatus());
+        $this->assertEmpty($response->getBody());
+        $this->assertNull($response->getHeader("Content-Type"));
+        $this->assertNull($response->getHeader("Content-Length"));
+    }
+
+    function testSend()
+    {
+        HeaderStack::reset();
+
+        $request = new Request();
+        $request->mock();
+
+        $response = new Response();
+        $response->html("yes");
+
+        $sender = new Sender();
+
+        ob_start();
+        $sender->send($request, $response);
+
+        $this->assertEquals("yes", ob_get_clean());
+        $this->assertEquals(array(
+            "HTTP/1.1 200 OK",
+            "Content-Type: text/html",
+            "Content-Length: 3"
+        ), HeaderStack::stack());
     }
 }
