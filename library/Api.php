@@ -31,13 +31,6 @@ class Api
     public $cacheFile;
 
     /**
-     * Allows us to override the framework creating a dispatcher instance.
-     *
-     * @var Dispatcher|null
-     */
-    public $dispatcher;
-
-    /**
      * Defines a callable which will be used to handle any errors during dispatch.
      * The signature of the callable is:
      *
@@ -156,9 +149,7 @@ class Api
      */
     public function defaultError(Request $request, Response $response, Services $services, Exception $exception)
     {
-        $response->setStatus(500);
-        $response->setHeader("Content-Type", "text/html");
-        $response->setBody("<pre>$exception</pre>");
+        $response->html("<pre>$exception</pre>", 500);
     }
 
     /**
@@ -171,9 +162,7 @@ class Api
      */
     public function defaultNotFound(Request $request, Response $response)
     {
-        $response->setStatus(404);
-        $response->setHeader("Content-Type", "text/html");
-        $response->setBody("<b>Not Found</b>");
+        $response->html("<b>Not Found</b>", 404);
     }
 
     /**
@@ -207,14 +196,9 @@ class Api
 
         $this->services->initialise($request, $response);
 
-        if (!$this->dispatcher) {
-            $router = new Router(new Cache($this->cacheFile), new UrlTools());
-            $dispatcher = new Dispatcher($router, new Sender());
+        $router = new Router(new Cache($this->cacheFile), new UrlTools());
 
-        } else {
-            $dispatcher = $this->dispatcher;
-        }
-
+        $dispatcher = new Dispatcher($router, new Sender());
         $dispatcher->dispatch($this, $request, $response);
     }
 }
