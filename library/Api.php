@@ -51,20 +51,6 @@ class Api
     public $error;
 
     /**
-     * The last response dispatched by the Api.
-     *
-     * @var Response
-     */
-    public $lastResponse;
-
-    /**
-     * The last request dispatched by the Api.
-     *
-     * @var Request
-     */
-    public $lastRequest;
-
-    /**
      * Defines a callable which will be used when a request cannot be matched
      * to a route. The signature of the callable is:
      *
@@ -219,8 +205,7 @@ class Api
             $response = new Response();
         }
 
-        $this->lastRequest = $request;
-        $this->lastResponse = $response;
+        $this->services->initialise($request, $response);
 
         if (!$this->dispatcher) {
             $router = new Router(new Cache($this->cacheFile), new UrlTools());
