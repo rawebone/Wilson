@@ -13,7 +13,7 @@
         backupGlobals="true"
         strict="false"
         verbose="false"
-        bootstrap="vendor/autoload.php">
+        bootstrap="tests/bootstrap.php">
     <testsuites>
         <testsuite name="Tests">
             <directory>./tests/</directory>

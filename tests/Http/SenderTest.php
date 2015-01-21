@@ -11,12 +11,9 @@
 
 namespace Wilson\Tests\Http;
 
-require_once __DIR__ . "/../Fixtures/HttpFunctions.php";
-
 use Wilson\Http\HeaderStack;
 use Wilson\Http\Request;
 use Wilson\Http\Response;
-use Wilson\Http\Sender;
 use Wilson\Tests\Fixtures\SenderProxy;
 
 class SenderTest extends \PHPUnit_Framework_TestCase
