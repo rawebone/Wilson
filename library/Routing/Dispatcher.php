@@ -50,8 +50,6 @@ class Dispatcher
     {
         try {
             call_user_func($api->prepare, $request, $response);
-            $api->services->initialise($request, $response);
-
             $this->routeRequest($api, $request, $response);
 
         } catch (\Exception $exception) {

@@ -12,6 +12,7 @@
 namespace Wilson\Tests\Routing;
 
 use Prophecy\Argument;
+use SebastianBergmann\Exporter\Exception;
 use Wilson\Api;
 use Wilson\Http\Request;
 use Wilson\Http\Response;
@@ -116,13 +117,10 @@ class DispatcherTest extends ProphecyTestCase
         $this->assertEquals(1, $request->getParam("i"));
     }
 
-    /**
-     * @expectedException \ErrorException
-     */
     function testRouteRequestWhereNotFound()
     {
         $api = new Api();
-        $api->notFound = function () { throw new \ErrorException(); };
+        $api->notFound = function ($request) { $request->setParam("i", 1); };
 
         $request = new Request();
         $response = new Response();
@@ -136,6 +134,7 @@ class DispatcherTest extends ProphecyTestCase
         $proxy = DispatcherProxy::dispatcher($dispatcher);
 
         $proxy->routeRequest($api, $request, $response);
+        $this->assertEquals(1, $request->getParam("i"));
     }
 
     function testRouteRequestWhereNotAllowedWithOptions()
@@ -146,7 +145,7 @@ class DispatcherTest extends ProphecyTestCase
         $response = new Response();
 
         $router = $this->prophesize("Wilson\\Routing\\Router");
-        $router->match(array(), Argument::any(), Argument::any())->willReturn((object)array(
+        $router->match(array(), Argument::type("string"), Argument::type("string"))->willReturn((object)array(
             "status" => Router::METHOD_NOT_ALLOWED,
             "allowed" => array("GET", "POST")
         ));
@@ -168,7 +167,7 @@ class DispatcherTest extends ProphecyTestCase
         $response = new Response();
 
         $router = $this->prophesize("Wilson\\Routing\\Router");
-        $router->match(array(), Argument::any(), Argument::any())->willReturn((object)array(
+        $router->match(array(), Argument::type("string"), Argument::type("string"))->willReturn((object)array(
             "status" => Router::METHOD_NOT_ALLOWED,
             "allowed" => array("GET", "POST")
         ));
@@ -182,5 +181,55 @@ class DispatcherTest extends ProphecyTestCase
         $this->assertEquals("GET, POST", $response->getHeader("Allow"));
     }
 
-    // @todo finish tests for dispatch()
+    function testDispatchCallsPrepareAndErrorHandlers()
+    {
+        $api = new Api();
+        $api->testing = true;
+        $api->error = function (Request $req, Response $resp, Services $s, \Exception $e)
+        {
+            $req->setParam("exception_called", true);
+        };
+
+        $api->prepare = function (Request $req, Response $resp)
+        {
+            throw new Exception("Test");
+        };
+
+        $request = new Request();
+        $response = new Response();
+
+        $sender = $this->prophesize("Wilson\\Http\\Sender");
+        $sender->send($request, $response)->shouldNotBeCalled();
+
+        $this->getDispatcher(null, $sender->reveal())
+             ->dispatch($api, $request, $response);
+
+        $this->assertTrue($request->getParam("exception_called"));
+    }
+
+    function testDispatchCallsSender()
+    {
+        $api = new Api();
+        $request = new Request();
+        $response = new Response();
+
+        $sender = $this->prophesize("Wilson\\Http\\Sender");
+        $sender->send($request, $response)->shouldBeCalled();
+
+        $this->getDispatcher(null, $sender->reveal())
+             ->dispatch($api, $request, $response);
+    }
+
+    protected function getDispatcher(Router $router = null, Sender $sender = null)
+    {
+        if (!$router) {
+            $router = new Router(new Cache(""), new UrlTools());
+        }
+
+        if (!$sender) {
+            $sender = new Sender();
+        }
+
+        return new Dispatcher($router, $sender);
+    }
 }
