@@ -360,9 +360,7 @@ class Response extends MessageAbstract
             $this->unsetHeader("Expires");
 
         } else {
-            $date = clone $date;
-            $date->setTimezone(new \DateTimeZone("UTC"));
-            $this->setHeader("Expires", $date->format("D, d M Y H:i:s T"));
+            $this->setHeader("Expires", $this->formatDate($date));
         }
     }
 
@@ -378,10 +376,18 @@ class Response extends MessageAbstract
             $this->unsetHeader("Last-Modified");
 
         } else {
-            $date = clone $date;
-            $date->setTimezone(new \DateTimeZone("UTC"));
-            $this->setHeader("Last-Modified", $date->format("D, d M Y H:i:s T"));
+            $this->setHeader("Last-Modified", $this->formatDate($date));
         }
+    }
+
+    /**
+     * Sets the date of the response.
+     *
+     * @param \DateTime $date
+     */
+    public function setDate(\DateTime $date)
+    {
+        $this->setHeader("Date", $this->formatDate($date));
     }
 
     /**
@@ -425,5 +431,18 @@ class Response extends MessageAbstract
         }
 
         $this->cacheMissedHandler = $fn;
+    }
+
+    /**
+     * Returns a UTC formatted date string from the given datetime object.
+     *
+     * @param \DateTime $date
+     * @return string
+     */
+    protected function formatDate(\DateTime $date)
+    {
+        $date = clone $date;
+        $date->setTimezone(new \DateTimeZone("UTC"));
+        return $date->format("D, d M Y H:i:s T");
     }
 }

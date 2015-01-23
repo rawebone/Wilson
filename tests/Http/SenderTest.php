@@ -215,6 +215,7 @@ class SenderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(array(
             "HTTP/1.1 200 OK",
             "Content-Type: text/html",
+            "Date: " . $response->getHeader("Date"),
             "Content-Length: 3"
         ), HeaderStack::stack());
     }

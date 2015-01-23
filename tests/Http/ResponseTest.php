@@ -364,4 +364,12 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals("application/json", $response->getHeader("Content-Type"));
     }
+
+    function testSetDate()
+    {
+        $response = new Response();
+        $response->setDate(new \DateTime());
+
+        $this->assertNotNull($response->getHeader("Date"));
+    }
 }

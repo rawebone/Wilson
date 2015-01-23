@@ -44,11 +44,11 @@ class Sender
      */
     protected function prepare(Request $request, Response $response)
     {
-        if ($response->isNotModified($request)) {
-            $response->notModified();
-        } else {
-            $response->cacheMissed();
+        if (!$response->hasHeader("Date")) {
+            $response->setDate(new \DateTime());
         }
+
+        $this->checkForModifications($request, $response);
 
         // Fix output content
         if ($response->isInformational()
@@ -67,6 +67,22 @@ class Sender
 
         $this->checkProtocol($request, $response);
         $this->checkCacheControl($request, $response);
+    }
+
+    /**
+     * Handles cache validation.
+     *
+     * @param Request $request
+     * @param Response $response
+     * @return void
+     */
+    protected function checkForModifications(Request $request, Response $response)
+    {
+        if ($response->isNotModified($request)) {
+            $response->notModified();
+        } else {
+            $response->cacheMissed();
+        }
     }
 
     /**
