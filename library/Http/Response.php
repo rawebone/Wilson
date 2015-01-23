@@ -78,6 +78,12 @@ class Response extends MessageAbstract
         504 => "504 Gateway Timeout",
         505 => "505 HTTP Version Not Supported"
     );
+
+    /**
+     * @var callable
+     */
+    protected $cacheMissedHandler;
+
     /**
      * @var string
      */
@@ -87,6 +93,26 @@ class Response extends MessageAbstract
      * @var int
      */
     protected $status = 200;
+
+    /**
+     * Creates a new instance of the Response.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->cacheMissedHandler = function () { };
+    }
+
+    /**
+     * Invokes the handler to be called when the cache hit could not be made.
+     *
+     * @return void
+     */
+    public function cacheMissed()
+    {
+        call_user_func($this->cacheMissedHandler);
+    }
 
     /**
      * Returns whether the status is in the Client Error range.
@@ -382,5 +408,22 @@ class Response extends MessageAbstract
         if ($this->status < 100 || $this->status > 600) {
             throw new \InvalidArgumentException("HTTP Status $this->status is invalid!");
         }
+    }
+
+    /**
+     * Sets the handler to be called when the request misses the cache. This
+     * handler can then be used to set the body of the response/headers for
+     * sending back to the client.
+     *
+     * @param callable $fn
+     * @throws \InvalidArgumentException
+     */
+    public function whenCachedMissed($fn)
+    {
+        if (!is_callable($fn)) {
+            throw new \InvalidArgumentException("\$fn should be a callable");
+        }
+
+        $this->cacheMissedHandler = $fn;
     }
 }

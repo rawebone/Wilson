@@ -352,4 +352,16 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("text/xhtml", $response->getHeader("Content-Type"));
     }
 
+    function testCacheMissedHandling()
+    {
+        $response = new Response();
+        $response->whenCachedMissed(function () use ($response)
+        {
+            $response->json(array(1, 2, 3));
+        });
+
+        $response->cacheMissed();
+
+        $this->assertEquals("application/json", $response->getHeader("Content-Type"));
+    }
 }

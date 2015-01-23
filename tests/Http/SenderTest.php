@@ -218,4 +218,24 @@ class SenderTest extends \PHPUnit_Framework_TestCase
             "Content-Length: 3"
         ), HeaderStack::stack());
     }
+
+    function testCacheMiss()
+    {
+        $proxy = SenderProxy::sender();
+        $request = new Request();
+        $request->mock();
+
+        $response = new Response();
+        $response->whenCachedMissed(function () use ($response)
+        {
+            $response->json(array(1, 2, 3));
+        });
+
+        $proxy->prepare($request, $response);
+
+        $this->assertEquals(200, $response->getStatus());
+        $this->assertSame("[1,2,3]", $response->getBody());
+        $this->assertEquals("application/json", $response->getHeader("Content-Type"));
+        $this->assertEquals(7, $response->getHeader("Content-Length"));
+    }
 }

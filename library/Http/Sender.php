@@ -46,6 +46,8 @@ class Sender
     {
         if ($response->isNotModified($request)) {
             $response->notModified();
+        } else {
+            $response->cacheMissed();
         }
 
         // Fix output content
