@@ -355,7 +355,7 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
     function testCacheMissedHandling()
     {
         $response = new Response();
-        $response->whenCachedMissed(function () use ($response)
+        $response->whenCacheMissed(function () use ($response)
         {
             $response->json(array(1, 2, 3));
         });

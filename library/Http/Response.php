@@ -424,7 +424,7 @@ class Response extends MessageAbstract
      * @param callable $fn
      * @throws \InvalidArgumentException
      */
-    public function whenCachedMissed($fn)
+    public function whenCacheMissed($fn)
     {
         if (!is_callable($fn)) {
             throw new \InvalidArgumentException("\$fn should be a callable");

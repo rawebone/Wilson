@@ -227,7 +227,7 @@ class SenderTest extends \PHPUnit_Framework_TestCase
         $request->mock();
 
         $response = new Response();
-        $response->whenCachedMissed(function () use ($response)
+        $response->whenCacheMissed(function () use ($response)
         {
             $response->json(array(1, 2, 3));
         });
