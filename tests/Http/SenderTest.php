@@ -239,4 +239,30 @@ class SenderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("application/json", $response->getHeader("Content-Type"));
         $this->assertEquals(7, $response->getHeader("Content-Length"));
     }
+
+    function testMakeCacheHeaders()
+    {
+        HeaderStack::reset();
+
+        $request = new Request();
+        $request->mock();
+
+        $response = new Response();
+        $response->html("yes");
+        $response->getCacheControl()->makePrivate();
+
+        $sender = new Sender();
+
+        ob_start();
+        $sender->send($request, $response);
+
+        $this->assertEquals("yes", ob_get_clean());
+        $this->assertEquals(array(
+            "HTTP/1.1 200 OK",
+            "Content-Type: text/html",
+            "Date: " . $response->getHeader("Date"),
+            "Cache-Control: private",
+            "Content-Length: 3"
+        ), HeaderStack::stack());
+    }
 }

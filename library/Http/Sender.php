@@ -48,6 +48,8 @@ class Sender
             $response->setDateHeader("Date", new \DateTime());
         }
 
+        $response->getCacheControl()->makeCacheHeaders();
+
         $this->checkForModifications($request, $response);
 
         // Fix output content

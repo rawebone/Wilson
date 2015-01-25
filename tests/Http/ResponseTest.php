@@ -338,4 +338,13 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals("application/json", $response->getHeader("Content-Type"));
     }
+
+    function testGetCacheControl()
+    {
+        $response = new Response();
+        $this->assertInstanceOf(
+            "Wilson\\Http\\CacheControl",
+            $response->getCacheControl()
+        );
+    }
 }

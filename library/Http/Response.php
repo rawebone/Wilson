@@ -80,6 +80,11 @@ class Response extends MessageAbstract
     );
 
     /**
+     * @var CacheControl
+     */
+    protected $cacheControl;
+
+    /**
      * @var callable
      */
     protected $cacheMissedHandler;
@@ -101,6 +106,7 @@ class Response extends MessageAbstract
      */
     public function __construct()
     {
+        $this->cacheControl = new CacheControl($this);
         $this->cacheMissedHandler = function () { };
     }
 
@@ -201,6 +207,16 @@ class Response extends MessageAbstract
     public function isServerError()
     {
         return $this->status >= 500 && $this->status < 600;
+    }
+
+    /**
+     * Returns the Cache Control object for the response.
+     *
+     * @return CacheControl
+     */
+    public function getCacheControl()
+    {
+        return $this->cacheControl;
     }
 
     /**
