@@ -172,6 +172,21 @@ abstract class MessageAbstract
     }
 
     /**
+     * Sets a UTC formatted date string from the given datetime object.
+     *
+     * @param string $name
+     * @param \DateTime $date
+     * @return void
+     */
+    public function setDateHeader($name, \DateTime $date)
+    {
+        $date = clone $date;
+        $date->setTimezone(new \DateTimeZone("UTC"));
+
+        $this->headers[$name] = $date->format("D, d M Y H:i:s T");
+    }
+
+    /**
      * Sets a header by name.
      *
      * @param string $name

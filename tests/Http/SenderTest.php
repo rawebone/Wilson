@@ -185,7 +185,7 @@ class SenderTest extends \PHPUnit_Framework_TestCase
         $response->setStatus(204);
         $response->setHeader("Content-Type", "blah");
         $response->setHeader("Content-Length", 1);
-        $response->setLastModified(new \DateTime("Sun, 25 Aug 2013 18:32:31 GMT"));
+        $response->setDateHeader("Last-Modified", new \DateTime("Sun, 25 Aug 2013 18:32:31 GMT"));
         $response->setBody("hello");
 
         $proxy->prepare($request, $response);

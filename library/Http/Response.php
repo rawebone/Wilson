@@ -349,48 +349,6 @@ class Response extends MessageAbstract
     }
 
     /**
-     * Sets the date at which the content will expire.
-     *
-     * @param \DateTime $date
-     * @return void
-     */
-    public function setExpires(\DateTime $date = null)
-    {
-        if ($date === null) {
-            $this->unsetHeader("Expires");
-
-        } else {
-            $this->setHeader("Expires", $this->formatDate($date));
-        }
-    }
-
-    /**
-     * Sets the last modified date of the content.
-     *
-     * @param \DateTime $date
-     * @return void
-     */
-    public function setLastModified(\DateTime $date = null)
-    {
-        if ($date === null) {
-            $this->unsetHeader("Last-Modified");
-
-        } else {
-            $this->setHeader("Last-Modified", $this->formatDate($date));
-        }
-    }
-
-    /**
-     * Sets the date of the response.
-     *
-     * @param \DateTime $date
-     */
-    public function setDate(\DateTime $date)
-    {
-        $this->setHeader("Date", $this->formatDate($date));
-    }
-
-    /**
      * Sets the protocol that the response should conform to.
      *
      * @param string $protocol
@@ -431,18 +389,5 @@ class Response extends MessageAbstract
         }
 
         $this->cacheMissedHandler = $fn;
-    }
-
-    /**
-     * Returns a UTC formatted date string from the given datetime object.
-     *
-     * @param \DateTime $date
-     * @return string
-     */
-    protected function formatDate(\DateTime $date)
-    {
-        $date = clone $date;
-        $date->setTimezone(new \DateTimeZone("UTC"));
-        return $date->format("D, d M Y H:i:s T");
     }
 }

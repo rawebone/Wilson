@@ -45,7 +45,7 @@ class Sender
     protected function prepare(Request $request, Response $response)
     {
         if (!$response->hasHeader("Date")) {
-            $response->setDate(new \DateTime());
+            $response->setDateHeader("Date", new \DateTime());
         }
 
         $this->checkForModifications($request, $response);

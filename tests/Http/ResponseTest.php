@@ -80,32 +80,6 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(200, $resp->getStatus());
     }
 
-    function testSetExpires()
-    {
-        $resp = new Response();
-        $resp->setExpires(null);
-
-        $this->assertNull($resp->getHeader("Expires"));
-
-        $now = new \DateTime();
-        $resp->setExpires($now);
-
-        $this->assertEquals(strtotime($resp->getHeader("Expires")), $now->getTimestamp());
-    }
-
-    function testSetLastModified()
-    {
-        $resp = new Response();
-        $resp->setLastModified(null);
-
-        $this->assertNull($resp->getHeader("Last-Modified"));
-
-        $now = new \DateTime();
-        $resp->setLastModified($now);
-
-        $this->assertEquals(strtotime($resp->getHeader("Last-Modified")), $now->getTimestamp());
-    }
-
     function testSetETag()
     {
         $resp = new Response();
@@ -363,13 +337,5 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $response->cacheMissed();
 
         $this->assertEquals("application/json", $response->getHeader("Content-Type"));
-    }
-
-    function testSetDate()
-    {
-        $response = new Response();
-        $response->setDate(new \DateTime());
-
-        $this->assertNotNull($response->getHeader("Date"));
     }
 }

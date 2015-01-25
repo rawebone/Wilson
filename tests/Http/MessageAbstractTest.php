@@ -78,6 +78,20 @@ class MessageAbstractTest extends \PHPUnit_Framework_TestCase
         $this->assertNull($msg->getParam("abc"));
         $this->assertEquals(456, $msg->getParam("def"));
     }
+
+    function testSetDateHeader()
+    {
+        $dt = new \DateTime();
+        $dt->setTimezone(new \DateTimeZone("UTC"));
+
+        $msg = new Message();
+        $msg->setDateHeader("Test", $dt);
+
+        $this->assertEquals(
+            $dt->format("D, d M Y H:i:s T"),
+            $msg->getHeader("Test")
+        );
+    }
 }
 
 class Message extends MessageAbstract { }
