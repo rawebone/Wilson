@@ -339,6 +339,15 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("application/json", $response->getHeader("Content-Type"));
     }
 
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    function testCacheMissedWithInvalidHandler()
+    {
+        $response = new Response();
+        $response->whenCacheMissed(null);
+    }
+
     function testGetCacheControl()
     {
         $response = new Response();
