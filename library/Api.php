@@ -199,6 +199,6 @@ class Api
         $router = new Router(new Cache($this->cacheFile), new UrlTools());
 
         $dispatcher = new Dispatcher($this, $request, $response, $router, new Sender($request, $response));
-        $dispatcher->dispatch($this, $request, $response);
+        $dispatcher->dispatch();
     }
 }

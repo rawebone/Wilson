@@ -81,9 +81,6 @@ class Dispatcher
     /**
      * Routes the request the handler most appropriate.
      *
-     * @param Api $api
-     * @param Request $request
-     * @param Response $response
      * @return void
      */
     protected function routeRequest()
@@ -113,7 +110,7 @@ class Dispatcher
      * Calls the handlers of a match in turn until the stack is exhausted or a
      * handler returns false.
      *
-     * @param object $match
+     * @param \stdClass $match
      * @return void
      */
     protected function routeToHandlers($match)
@@ -141,7 +138,7 @@ class Dispatcher
     /**
      * Responds to the client to confirm method not allowed.
      *
-     * @param object $match
+     * @param \stdClass $match
      * @return void
      */
     protected function routeToNotAllowed($match)

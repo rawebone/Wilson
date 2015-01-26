@@ -87,6 +87,13 @@ class DispatcherTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($this->request->getParam("middleware_called"));
     }
 
+    function testNormalWithMiddlewareAbortDispatch()
+    {
+        $this->request->mock(array("REQUEST_URI" => "/route-2"));
+
+        $this->assertEquals("failed", $this->dispatch());
+    }
+
     function testNormalDispatchWithTestingFlag()
     {
         $this->api->testing = true;
