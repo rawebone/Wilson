@@ -101,8 +101,6 @@ class Response extends MessageAbstract
 
     /**
      * Creates a new instance of the Response.
-     *
-     * @return void
      */
     public function __construct()
     {
