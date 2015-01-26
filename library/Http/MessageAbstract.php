@@ -113,6 +113,17 @@ abstract class MessageAbstract
     }
 
     /**
+     * Returns whether a parameter has been set.
+     *
+     * @param string $name
+     * @return bool
+     */
+    public function hasParam($name)
+    {
+        return isset($this->params[$name]);
+    }
+
+    /**
      * Returns a request parameter, or the default.
      *
      * @param string $name

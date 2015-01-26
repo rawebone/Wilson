@@ -77,6 +77,7 @@ class MessageAbstractTest extends \PHPUnit_Framework_TestCase
         $msg->setAllParams(array("def" => 456));
         $this->assertNull($msg->getParam("abc"));
         $this->assertEquals(456, $msg->getParam("def"));
+        $this->assertTrue($msg->hasParam("def"));
     }
 
     function testSetDateHeader()
