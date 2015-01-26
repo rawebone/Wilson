@@ -358,19 +358,13 @@ class Response extends MessageAbstract
     /**
      * Sets the ETag value of the content.
      *
-     * @param string|null $value
+     * @param string $value
      * @param bool $weak
      * @return void
      */
-    public function setETag($value = null, $weak = false)
+    public function setETag($value, $weak = false)
     {
-        if ($value === null) {
-            $this->unsetHeader("ETag");
-
-        } else {
-            $tag = ($weak ? "W/" : "") . "\"$value\"";
-            $this->setHeader("ETag", $tag);
-        }
+        $this->setHeader("ETag", ($weak ? "W/" : "") . "\"$value\"");
     }
 
     /**

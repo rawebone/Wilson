@@ -84,10 +84,6 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
     {
         $resp = new Response();
 
-        $resp->setHeader("ETag", "abcc");
-        $resp->setETag(null);
-        $this->assertNull($resp->getHeader("ETag"));
-
         $resp->setETag("abc");
         $this->assertEquals('"abc"', $resp->getHeader("ETag"));
 
