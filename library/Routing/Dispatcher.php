@@ -11,8 +11,8 @@
 
 namespace Wilson\Routing;
 
+use Exception;
 use Wilson\Api;
-use Wilson\Services;
 use Wilson\Http\Request;
 use Wilson\Http\Response;
 use Wilson\Http\Sender;
@@ -23,6 +23,21 @@ use Wilson\Http\Sender;
 class Dispatcher
 {
     /**
+     * @var Api
+     */
+    protected $api;
+
+    /**
+     * @var Request
+     */
+    protected $request;
+
+    /**
+     * @var Response
+     */
+    protected $response;
+
+    /**
      * @var Router
      */
     protected $router;
@@ -32,32 +47,34 @@ class Dispatcher
      */
     protected $sender;
 
-    public function __construct(Router $router, Sender $sender)
+    public function __construct(Api $api, Request $request, Response $response,
+        Router $router, Sender $sender)
     {
+        $this->api = $api;
+        $this->request = $request;
+        $this->response = $response;
         $this->router = $router;
         $this->sender = $sender;
     }
 
     /**
-     * Dispatches the request and sends the response to the client, if the
+     * Dispatches the request and sends the response to the client if the
      * system is not being tested.
      *
-     * @param Api $api
-     * @param Request $request
-     * @param Response $response
+     * @return
      */
-    public function dispatch(Api $api, Request $request, Response $response)
+    public function dispatch()
     {
         try {
-            call_user_func($api->prepare, $request, $response);
-            $this->routeRequest($api, $request, $response);
+            $this->dispatchController($this->api->prepare);
+            $this->routeRequest();
 
         } catch (\Exception $exception) {
-            call_user_func($api->error, $request, $response, $api->services, $exception);
+            $this->dispatchController($this->api->error, $exception);
         }
 
-        if (!$api->testing) {
-            $this->sender->send($request, $response);
+        if (!$this->api->testing) {
+            $this->sender->send();
         }
     }
 
@@ -69,26 +86,25 @@ class Dispatcher
      * @param Response $response
      * @return void
      */
-    protected function routeRequest(Api $api, Request $request, Response $response)
+    protected function routeRequest()
     {
         $match = $this->router->match(
-            $api->resources,
-            $request->getMethod(),
-            $request->getPathInfo()
+            $this->api->resources,
+            $this->request->getMethod(),
+            $this->request->getPathInfo()
         );
 
         switch ($match->status) {
             case Router::FOUND:
-                $this->routeToHandlers($match, $request, $response, $api->services);
+                $this->routeToHandlers($match);
                 break;
 
             case Router::NOT_FOUND:
-                call_user_func($api->notFound, $request, $response, $api->services);
+                $this->routeToNotFound();
                 break;
 
             case Router::METHOD_NOT_ALLOWED:
-                $response->setHeader("Allow", join(", ", $match->allowed));
-                $response->setStatus($request->getMethod() === "OPTIONS" ? 200 : 405);
+                $this->routeToNotAllowed($match);
                 break;
         }
     }
@@ -98,28 +114,59 @@ class Dispatcher
      * handler returns false.
      *
      * @param object $match
-     * @param Request $request
-     * @param Response $response
-     * @param Services $services
      * @return void
      */
-    protected function routeToHandlers($match, Request $request, Response $response, Services $services)
+    protected function routeToHandlers($match)
     {
-        $request->setParams($match->params);
+        $this->request->setParams($match->params);
 
         // Dispatch all middleware, abort if they return boolean false
         foreach ($match->handlers as $handler) {
-
-            $result = call_user_func(
-                $handler,
-                $request,
-                $response,
-                $services
-            );
-
-            if ($result === false) {
+            if ($this->dispatchController($handler) === false) {
                 return;
             }
         }
+    }
+
+    /**
+     * Route the request to the defined Not Found handler.
+     *
+     * @return void
+     */
+    protected function routeToNotFound()
+    {
+        $this->dispatchController($this->api->notFound);
+    }
+
+    /**
+     * Responds to the client to confirm method not allowed.
+     *
+     * @param object $match
+     * @return void
+     */
+    protected function routeToNotAllowed($match)
+    {
+        $status = $this->request->getMethod() === "OPTIONS" ? 200 : 405;
+
+        $this->response->setHeader("Allow", join(", ", $match->allowed));
+        $this->response->setStatus($status);
+    }
+
+    /**
+     * Invokes a callable with the required arguments for a controller.
+     *
+     * @param callable $controller
+     * @param Exception $exception
+     * @return boolean|void
+     */
+    protected function dispatchController($controller, Exception $exception = null)
+    {
+        return call_user_func(
+            $controller,
+            $this->request,
+            $this->response,
+            $this->api->services,
+            $exception
+        );
     }
 }

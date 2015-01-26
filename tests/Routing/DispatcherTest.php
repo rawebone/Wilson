@@ -14,6 +14,7 @@ namespace Wilson\Tests\Routing;
 use Prophecy\Argument;
 use SebastianBergmann\Exporter\Exception;
 use Wilson\Api;
+use Wilson\Http\HeaderStack;
 use Wilson\Http\Request;
 use Wilson\Http\Response;
 use Wilson\Http\Sender;
@@ -25,211 +26,102 @@ use Wilson\Tests\Fixtures\DispatcherProxy;
 use Prophecy\PhpUnit\ProphecyTestCase;
 use Wilson\Utils\Cache;
 
-class DispatcherTest extends ProphecyTestCase
+class DispatcherTest extends \PHPUnit_Framework_TestCase
 {
-    function testRouteToHandlersSetsParams()
+    /**
+     * @var Api
+     */
+    protected $api;
+
+    /**
+     * @var Dispatcher
+     */
+    protected $dispatcher;
+
+    /**
+     * @var Request
+     */
+    protected $request;
+
+    /**
+     * @var Response
+     */
+    protected $response;
+
+    protected function setUp()
     {
-        $request = new Request();
-        $response = new Response();
-        $services = new Services();
+        HeaderStack::reset();
+
+        $this->api = $api = new Api();
+        $this->request = $req = new Request();
+        $this->response = $resp = new Response();
+
         $router = new Router(new Cache(""), new UrlTools());
-        $sender = new Sender();
-        $dispatcher = new Dispatcher($router, $sender);
+        $sender = new Sender($req, $resp);
 
-        $proxy = DispatcherProxy::dispatcher($dispatcher);
-
-        $match = (object)array(
-            "handlers" => array(),
-            "params" => array("blah" => "blah")
-        );
-
-        $proxy->routeToHandlers($match, $request, $response, $services);
-
-        $this->assertEquals("blah", $request->getParam("blah"));
+        $this->dispatcher = new Dispatcher($api, $req, $resp, $router, $sender);
+        $this->api->resources = array("Wilson\\Tests\\Fixtures\\ResourceFixture");
     }
 
-    function testRouteToHandlersRoutesToAll()
+    protected function dispatch()
     {
-        $request = new Request();
-        $response = new Response();
-        $services = new Services();
-        $router = new Router(new Cache(""), new UrlTools());
-        $sender = new Sender();
-        $dispatcher = new Dispatcher($router, $sender);
-
-        $proxy = DispatcherProxy::dispatcher($dispatcher);
-
-        $match = (object)array(
-            "params" => array(),
-            "handlers" => array(
-                function ($request) { $request->setParam("i", 1); },
-                function ($request) { $request->setParam("i", 2); }
-            ),
-        );
-
-        $proxy->routeToHandlers($match, $request, $response, $services);
-
-        $this->assertEquals(2, $request->getParam("i"));
+        ob_start();
+        $this->dispatcher->dispatch();
+        return ob_get_clean();
     }
 
-    function testRouteToHandlersAborts()
+    function testNormalDispatch()
     {
-        $request = new Request();
-        $response = new Response();
-        $services = new Services();
-        $router = new Router(new Cache(""), new UrlTools());
-        $sender = new Sender();
-        $dispatcher = new Dispatcher($router, $sender);
+        $this->api->prepare = function (Request $request) { $request->setParam("prepare", true); };
+        $this->request->mock(array("REQUEST_URI" => "/route-1"));
 
-        $proxy = DispatcherProxy::dispatcher($dispatcher);
-
-        $match = (object)array(
-            "params" => array(),
-            "handlers" => array(
-                function ($request) { return false; },
-                function ($request) { $request->setParam("i", 2); }
-            ),
-        );
-
-        $proxy->routeToHandlers($match, $request, $response, $services);
-
-        $this->assertNull($request->getParam("i"));
+        $this->assertEquals("found", $this->dispatch());
+        $this->assertTrue($this->request->getParam("prepare"));
     }
 
-    function testRouteRequestWhereFound()
+    function testNormalWithMiddlewareDispatch()
     {
-        $api = new Api();
-        $request = new Request();
-        $response = new Response();
+        $this->request->mock(array("REQUEST_URI" => "/route-4"));
 
-        $router = $this->prophesize("Wilson\\Routing\\Router");
-        $router->match(array(), Argument::any(), Argument::any())->willReturn((object)array(
-            "status" => Router::FOUND,
-            "handlers" => array(function ($request) { $request->setParam("i", 1); }),
-            "params" => array()
+        $this->assertEquals("found", $this->dispatch());
+        $this->assertTrue($this->request->getParam("middleware_called"));
+    }
+
+    function testNormalDispatchWithTestingFlag()
+    {
+        $this->api->testing = true;
+        $this->request->mock(array("REQUEST_URI" => "/route-1"));
+
+        $this->assertEmpty($this->dispatch());
+        $this->assertEmpty(HeaderStack::stack());
+    }
+
+    function testNotFoundDispatch()
+    {
+        $this->api->notFound = function (Request $request) { $request->setParam("not_found", true); };
+        $this->request->mock(array("REQUEST_URI" => "/not-found"));
+        $this->dispatch();
+
+        $this->assertTrue($this->request->getParam("not_found"));
+    }
+
+    function testErrorDispatch()
+    {
+        $this->api->error = function (Request $request) { $request->setParam("error", true); };
+        $this->request->mock(array("REQUEST_URI" => "/route-3"));
+        $this->dispatch();
+
+        $this->assertTrue($this->request->getParam("error"));
+    }
+
+    function testMethodNotAllowedDispatch()
+    {
+        $this->request->mock(array(
+            "REQUEST_URI" => "/route-1",
+            "REQUEST_METHOD" => "POST"
         ));
 
-        $dispatcher = new Dispatcher($router->reveal(), new Sender());
-        $proxy = DispatcherProxy::dispatcher($dispatcher);
-
-        $proxy->routeRequest($api, $request, $response);
-
-        $this->assertEquals(1, $request->getParam("i"));
-    }
-
-    function testRouteRequestWhereNotFound()
-    {
-        $api = new Api();
-        $api->notFound = function ($request) { $request->setParam("i", 1); };
-
-        $request = new Request();
-        $response = new Response();
-
-        $router = $this->prophesize("Wilson\\Routing\\Router");
-        $router->match(array(), Argument::any(), Argument::any())->willReturn((object)array(
-            "status" => Router::NOT_FOUND
-        ));
-
-        $dispatcher = new Dispatcher($router->reveal(), new Sender());
-        $proxy = DispatcherProxy::dispatcher($dispatcher);
-
-        $proxy->routeRequest($api, $request, $response);
-        $this->assertEquals(1, $request->getParam("i"));
-    }
-
-    function testRouteRequestWhereNotAllowedWithOptions()
-    {
-        $api = new Api();
-        $request = new Request();
-        $request->mock(array("REQUEST_METHOD" => "OPTIONS"));
-        $response = new Response();
-
-        $router = $this->prophesize("Wilson\\Routing\\Router");
-        $router->match(array(), Argument::type("string"), Argument::type("string"))->willReturn((object)array(
-            "status" => Router::METHOD_NOT_ALLOWED,
-            "allowed" => array("GET", "POST")
-        ));
-
-        $dispatcher = new Dispatcher($router->reveal(), new Sender());
-        $proxy = DispatcherProxy::dispatcher($dispatcher);
-
-        $proxy->routeRequest($api, $request, $response);
-
-        $this->assertEquals(200, $response->getStatus());
-        $this->assertEquals("GET, POST", $response->getHeader("Allow"));
-    }
-
-    function testRouteRequestWhereNotAllowedWithGet()
-    {
-        $api = new Api();
-        $request = new Request();
-        $request->mock();
-        $response = new Response();
-
-        $router = $this->prophesize("Wilson\\Routing\\Router");
-        $router->match(array(), Argument::type("string"), Argument::type("string"))->willReturn((object)array(
-            "status" => Router::METHOD_NOT_ALLOWED,
-            "allowed" => array("GET", "POST")
-        ));
-
-        $dispatcher = new Dispatcher($router->reveal(), new Sender());
-        $proxy = DispatcherProxy::dispatcher($dispatcher);
-
-        $proxy->routeRequest($api, $request, $response);
-
-        $this->assertEquals(405, $response->getStatus());
-        $this->assertEquals("GET, POST", $response->getHeader("Allow"));
-    }
-
-    function testDispatchCallsPrepareAndErrorHandlers()
-    {
-        $api = new Api();
-        $api->testing = true;
-        $api->error = function (Request $req, Response $resp, Services $s, \Exception $e)
-        {
-            $req->setParam("exception_called", true);
-        };
-
-        $api->prepare = function (Request $req, Response $resp)
-        {
-            throw new Exception("Test");
-        };
-
-        $request = new Request();
-        $response = new Response();
-
-        $sender = $this->prophesize("Wilson\\Http\\Sender");
-        $sender->send($request, $response)->shouldNotBeCalled();
-
-        $this->getDispatcher(null, $sender->reveal())
-             ->dispatch($api, $request, $response);
-
-        $this->assertTrue($request->getParam("exception_called"));
-    }
-
-    function testDispatchCallsSender()
-    {
-        $api = new Api();
-        $request = new Request();
-        $response = new Response();
-
-        $sender = $this->prophesize("Wilson\\Http\\Sender");
-        $sender->send($request, $response)->shouldBeCalled();
-
-        $this->getDispatcher(null, $sender->reveal())
-             ->dispatch($api, $request, $response);
-    }
-
-    protected function getDispatcher(Router $router = null, Sender $sender = null)
-    {
-        if (!$router) {
-            $router = new Router(new Cache(""), new UrlTools());
-        }
-
-        if (!$sender) {
-            $sender = new Sender();
-        }
-
-        return new Dispatcher($router, $sender);
+        $this->assertEmpty($this->dispatch());
+        $this->assertEquals(405, $this->response->getStatus());
     }
 }

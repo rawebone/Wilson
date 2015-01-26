@@ -61,7 +61,7 @@ class Api
      * The signature for this callable is:
      *
      * <code>
-     * function (Request $request, Response $response) {}
+     * function (Request $request, Response $response, Services $services) {}
      * </code>
      *
      * Exceptions thrown by this handler will trigger the error handler.
@@ -198,7 +198,7 @@ class Api
 
         $router = new Router(new Cache($this->cacheFile), new UrlTools());
 
-        $dispatcher = new Dispatcher($router, new Sender());
+        $dispatcher = new Dispatcher($this, $request, $response, $router, new Sender($request, $response));
         $dispatcher->dispatch($this, $request, $response);
     }
 }
