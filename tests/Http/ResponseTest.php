@@ -347,4 +347,19 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
             $response->getCacheControl()
         );
     }
+
+    function testIsBodyAllowed()
+    {
+        $response = new Response();
+        $this->assertTrue($response->isBodyAllowed());
+
+        $response->setStatus(101);
+        $this->assertFalse($response->isBodyAllowed());
+
+        $response->setStatus(204);
+        $this->assertFalse($response->isBodyAllowed());
+
+        $response->setStatus(304);
+        $this->assertFalse($response->isBodyAllowed());
+    }
 }

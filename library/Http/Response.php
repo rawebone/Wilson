@@ -119,6 +119,17 @@ class Response extends MessageAbstract
     }
 
     /**
+     * Returns whether the status allows for the response allows for the body
+     * to be returned to the user agent.
+     *
+     * @return boolean
+     */
+    public function isBodyAllowed()
+    {
+        return !($this->isInformational() || $this->status === 204 || $this->status === 304);
+    }
+
+    /**
      * Returns whether the status is in the Client Error range.
      *
      * @return bool
