@@ -14,119 +14,140 @@ namespace Wilson\Http;
 /**
  * This object prepares and sends a valid HTTP response based off of the given
  * Request object.
+ *
+ * @todo Refactor the handling of the sender from stateless to stateful and make the algorithm more generic
  */
 class Sender
 {
     /**
-     * Sends the response back to the client.
-     *
-     * @param Request $request
-     * @param Response $response
-     * @return void
+     * @var Request
      */
-    public function send(Request $request, Response $response)
+    protected $request;
+
+    /**
+     * @var Response
+     */
+    protected $response;
+
+    /**
+     * @var string[]
+     */
+    protected $steps;
+
+    public function __construct(Request $request, Response $response)
     {
-        $this->prepare($request, $response);
+        $this->request = $request;
+        $this->response = $response;
 
-        if (!headers_sent()) {
-            $this->sendHeaders($response);
-        }
-
-        $this->sendBody($response);
+        $this->steps = array(
+            "ensureDate",
+            "makeCacheHeaders",
+            "cacheValidation",
+            "prepareBody",
+            "ensureProtocolMatch",
+            "sendHeaders",
+            "sendBody"
+        );
     }
 
     /**
-     * Prepares the response based off of settings provided by the request.
+     * Sends the response back to the client.
      *
-     * @param Request $request
-     * @param Response $response
      * @return void
      */
-    protected function prepare(Request $request, Response $response)
+    public function send()
     {
-        if (!$response->hasHeader("Date")) {
-            $response->setDateHeader("Date", new \DateTime());
+        foreach ($this->steps as $step) {
+            $this->$step();
         }
+    }
 
-        $response->getCacheControl()->makeCacheHeaders();
+    /**
+     * Ensure a date is sent with the Response.
+     *
+     * @link https://tools.ietf.org/html/rfc2616#section-14.18
+     * @return void
+     */
+    protected function ensureDate()
+    {
+        if (!$this->response->hasHeader("Date")) {
+            $this->response->setDateHeader("Date", new \DateTime());
+        }
+    }
 
-        $this->checkForModifications($request, $response);
+    /**
+     * Ensure that Cache-Control headers are defined, if required, on the
+     * response.
+     *
+     * @see CacheControl
+     * @return void
+     */
+    protected function makeCacheHeaders()
+    {
+        $this->response->getCacheControl()->makeCacheHeaders();
+    }
 
-        // Fix output content
-        if ($response->isInformational()
-            || $request->getMethod() === "HEAD"
-            || $response->getStatus() === 204
-            || $response->getStatus() === 304
-        ) {
+    /**
+     * Validates that a cached data is still valid and adjust the response
+     * appropriately or begin deferred processing.
+     *
+     * @return void
+     */
+    protected function cacheValidation()
+    {
+        if ($this->response->isNotModified($this->request)) {
+            $this->response->notModified();
+        } else {
+            $this->response->cacheMissed();
+        }
+    }
+
+    /**
+     * If the response can have a body, then set the content-length else
+     * clear the body and content headers.
+     *
+     * @return void
+     */
+    protected function prepareBody()
+    {
+        $request  = $this->request;
+        $response = $this->response;
+
+        if (!$response->isBodyAllowed() || $request->getMethod() === "HEAD") {
             $response->unsetHeaders(array("Content-Type", "Content-Length"));
             $response->setBody("");
 
-        } else {
-            if (is_string($body = $response->getBody())) {
-                $response->setHeader("Content-Length", strlen($body));
-            }
-        }
-
-        $this->checkProtocol($request, $response);
-        $this->checkCacheControl($request, $response);
-    }
-
-    /**
-     * Handles cache validation.
-     *
-     * @param Request $request
-     * @param Response $response
-     * @return void
-     */
-    protected function checkForModifications(Request $request, Response $response)
-    {
-        if ($response->isNotModified($request)) {
-            $response->notModified();
-        } else {
-            $response->cacheMissed();
+        } else if (is_string($body = $response->getBody())) {
+            $response->setHeader("Content-Length", strlen($body));
         }
     }
 
     /**
      * Match the HTTP protocol of the request.
      *
-     * @param Request $request
-     * @param Response $response
      * @return void
      */
-    protected function checkProtocol(Request $request, Response $response)
+    protected function ensureProtocolMatch()
     {
-        if ($response->getProtocol() !== $request->getProtocol()) {
-            $response->setProtocol($request->getProtocol());
-        }
-    }
-
-    /**
-     * On the older HTTP protocol we need to send more cache headers.
-     *
-     * @param Request $request
-     * @param Response $response
-     * @return void
-     */
-    protected function checkCacheControl(Request $request, Response $response)
-    {
-        if ($request->getProtocol() === "HTTP/1.0" && $response->getHeader("Cache-Control") === "no-cache") {
-            $response->setHeaders(array("Pragma" => "no-cache", "Expires" => -1));
+        if ($this->response->getProtocol() !== $this->request->getProtocol()) {
+            $this->response->setProtocol($this->request->getProtocol());
         }
     }
 
     /**
      * Sends the headers of the response to the client.
      *
-     * @param Response $response
+     * @return void
      */
-    protected function sendHeaders(Response $response)
+    protected function sendHeaders()
     {
-        $status = $response->getMessage() ?: $response->getStatus();
-        header(sprintf("%s %s", $response->getProtocol(), $status));
+        if (!headers_sent()) {
+            $status = $this->response->getMessage() ?: $this->response->getStatus();
+            header(sprintf("%s %s", $this->response->getProtocol(), $status));
 
-        foreach ($response->getHeaders() as $name => $value) {
-            header("$name: $value", true);
+            foreach ($this->response->getHeaders() as $name => $value) {
+                header("$name: $value", true);
+            }
         }
     }
 
@@ -135,9 +156,11 @@ class Sender
      *
      * @return void
      */
-    protected function sendBody(Response $response)
+    protected function sendBody()
     {
-        if (is_callable($body = $response->getBody())) {
+        $body = $this->response->getBody();
+
+        if (is_callable($body)) {
             call_user_func($body);
 
         } else {
