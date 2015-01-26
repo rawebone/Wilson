@@ -174,8 +174,10 @@ class CacheControl
         if (isset($this->parts["max-age"])) {
             $expires = new \DateTime();
             $expires->add(new \DateInterval("PT{$this->parts["max-age"]}S"));
-
             $this->response->setDateHeader("Expires", $expires);
+
+        } else if (isset($this->parts["no-cache"])) {
+            $this->response->setHeader("Expires", -1);
         }
     }
 

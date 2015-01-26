@@ -39,6 +39,7 @@ class CacheControlTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals("no-cache", $this->response->getHeader("Cache-Control"));
         $this->assertEquals("no-cache", $this->response->getHeader("Pragma"));
+        $this->assertEquals(-1, $this->response->getHeader("Expires"));
     }
 
     function testMaxAge()
