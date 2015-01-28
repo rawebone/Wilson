@@ -14,8 +14,6 @@ namespace Wilson\Http;
 /**
  * This object prepares and sends a valid HTTP response based off of the given
  * Request object.
- *
- * @todo Refactor the handling of the sender from stateless to stateful and make the algorithm more generic
  */
 class Sender
 {
@@ -161,6 +159,10 @@ class Sender
     {
         $body = $this->response->getBody();
 
+        // Response::setBody() makes an is_callable check when setting the value.
+        // is_callable is a fairly heavy function due to the checks it has to
+        // perform compared to is_string, so this is a safe and fast way, though
+        // not necessarily intuitive way to structure the handling.
         if (is_string($body)) {
             echo $body;
 
