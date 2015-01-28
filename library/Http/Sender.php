@@ -95,7 +95,8 @@ class Sender
      */
     protected function cacheValidation()
     {
-        if ($this->response->isNotModified($this->request)) {
+        if ($this->request->isSafeMethod()
+            && ($this->matchEntityTags() || $this->matchModified())) {
             $this->response->notModified();
         } else {
             $this->response->cacheMissed();
@@ -160,11 +161,42 @@ class Sender
     {
         $body = $this->response->getBody();
 
-        if (is_callable($body)) {
-            call_user_func($body);
+        if (is_string($body)) {
+            echo $body;
 
         } else {
-            echo $body;
+            call_user_func($body);
         }
+    }
+
+    /**
+     * Returns whether the entity tags sent with the request match that
+     * given by the response.
+     *
+     * @return bool
+     */
+    protected function matchEntityTags()
+    {
+        $requested = $this->request->getETags();
+        $responding = $this->response->getHeader("ETag");
+
+        return $requested && (in_array($responding, $requested) || in_array("*", $requested));
+    }
+
+    /**
+     * Returns whether a resource has been modified between two requests.
+     *
+     * @return bool
+     */
+    protected function matchModified()
+    {
+        $lastModified = $this->response->getHeader("Last-Modified");
+        $modifiedSince = $this->request->getModifiedSince();
+
+        if ($modifiedSince && $lastModified) {
+            return strtotime($modifiedSince) >= strtotime($lastModified);
+        }
+
+        return false;
     }
 }

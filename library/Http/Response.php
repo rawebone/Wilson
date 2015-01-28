@@ -150,35 +150,6 @@ class Response extends MessageAbstract
     }
 
     /**
-     * Determines if the requested resource has been modified since the
-     * last request, allowing us to optimise the response. This is based
-     * off of Symfony\Component\HttpFoundation\Response::isNotModified().
-     *
-     * @param Request $request
-     * @return boolean
-     */
-    public function isNotModified(Request $request)
-    {
-        if (!$request->isSafeMethod()) {
-            return false;
-        }
-
-        $notModified = false;
-        $lastModified = $this->getHeader("Last-Modified");
-        $modifiedSince = $request->getModifiedSince();
-
-        if (($eTags = $request->getETags())) {
-            $notModified = in_array($this->getHeader("ETag"), $eTags) || in_array("*", $eTags);
-        }
-
-        if ($modifiedSince && $lastModified) {
-            $notModified = strtotime($modifiedSince) >= strtotime($lastModified) && (!$eTags || $notModified);
-        }
-
-        return $notModified;
-    }
-
-    /**
      * Returns whether the request status is 200.
      *
      * @return bool

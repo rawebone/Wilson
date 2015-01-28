@@ -11,6 +11,7 @@
 
 namespace Wilson\Tests\Http;
 
+use SebastianBergmann\Exporter\Exception;
 use Wilson\Http\HeaderStack;
 use Wilson\Http\Request;
 use Wilson\Http\Response;
@@ -175,5 +176,99 @@ class SenderTest extends \PHPUnit_Framework_TestCase
         );
 
         $this->assertEquals($expected, HeaderStack::stack());
+    }
+
+    /**
+     * @expectedException \ErrorException
+     */
+    function testCacheMissWithNonSafeMethod()
+    {
+        $this->response->whenCacheMissed(function () { throw new \ErrorException(); });
+        $this->request->mock(array(
+            "REQUEST_METHOD" => "POST"
+        ));
+
+        $this->sender->send();
+    }
+
+    /**
+     * @expectedException \ErrorException
+     */
+    function testCacheMissWithNoEtagsOrModifications()
+    {
+        $this->response->whenCacheMissed(function () { throw new \ErrorException(); });
+        $this->request->mock();
+        $this->sender->send();
+    }
+
+    /**
+     * @expectedException \ErrorException
+     */
+    function testCacheMissWithRequestedEtag()
+    {
+        $this->response->whenCacheMissed(function () { throw new \ErrorException(); });
+        $this->request->mock(array("HTTP_IF_NONE_MATCH" => "\"etagThree\""));
+        $this->sender->send();
+    }
+
+    function testCacheHitWithEtags()
+    {
+        $this->response->setETag("randomly_generated_etag");
+        $this->request->mock(array(
+            "HTTP_IF_NONE_MATCH" => "\"randomly_generated_etag\", \"randomly_generated_etag_2\", \"etagThree\""
+        ));
+
+        $this->send();
+        $this->assertEquals(304, $this->response->getStatus());
+    }
+
+    function testCacheHitWithEtagWildcard()
+    {
+        $this->response->setETag("randomly_generated_etag");
+        $this->request->mock(array(
+            "HTTP_IF_NONE_MATCH" => "*"
+        ));
+
+        $this->send();
+        $this->assertEquals(304, $this->response->getStatus());
+    }
+
+    /**
+     * @expectedException \ErrorException
+     */
+    function testCacheMissWithRequestedModified()
+    {
+        $this->response->whenCacheMissed(function () { throw new \ErrorException(); });
+        $this->request->mock(array("HTTP_IF_MODIFIED_SINCE" => "Sun, 25 Aug 2013 18:33:31 GMT"));
+        $this->sender->send();
+    }
+
+    /**
+     * @expectedException \ErrorException
+     */
+    function testCacheMissWithNewerModification()
+    {
+        $this->response->setHeader("Last-Modified", "Sun, 25 Aug 2013 18:33:31 GMT");
+        $this->response->whenCacheMissed(function () { throw new \ErrorException(); });
+        $this->request->mock(array("HTTP_IF_MODIFIED_SINCE" => "Sun, 25 Aug 2013 18:33:30 GMT"));
+        $this->sender->send();
+    }
+
+    function testCacheHitWithEarlierModificationTime()
+    {
+        $this->response->setHeader("Last-Modified", "Sun, 25 Aug 2013 18:33:30 GMT");
+        $this->request->mock(array("HTTP_IF_MODIFIED_SINCE" => "Sun, 25 Aug 2013 18:33:31 GMT"));
+        $this->send();
+
+        $this->assertEquals(304, $this->response->getStatus());
+    }
+
+    function testCacheHitWithSameModificationTime()
+    {
+        $this->response->setHeader("Last-Modified", "Sun, 25 Aug 2013 18:33:31 GMT");
+        $this->request->mock(array("HTTP_IF_MODIFIED_SINCE" => "Sun, 25 Aug 2013 18:33:31 GMT"));
+        $this->send();
+
+        $this->assertEquals(304, $this->response->getStatus());
     }
 }
