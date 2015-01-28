@@ -14,37 +14,63 @@ namespace Wilson\Tests;
 use Wilson\Http\Request;
 use Wilson\Http\Response;
 use Wilson\Services;
+use Wilson\Tests\Fixtures\TestContainer;
 
 class ServicesTest extends \PHPUnit_Framework_TestCase
 {
+	/**
+	 * @var TestContainer
+	 */
+	protected $container;
+
+	/**
+	 * @var Request
+	 */
+	protected $request;
+
+	/**
+	 * @var Response
+	 */
+	protected $response;
+
+	protected function setUp()
+	{
+		$this->container = new TestContainer();
+		$this->request = new Request();
+		$this->response = new Response();
+	}
+
 	function testGetService()
 	{
-		$service = new TestContainer();
-		$this->assertInstanceOf("stdClass", $service->service);
+		$this->assertInstanceOf("stdClass", $this->container->service);
 	}
 
 	function testInitialisation()
 	{
-		$service = new TestContainer();
-		$service->initialise(new Request(), new Response());
+		$this->container->initialise(
+			$this->request,
+			$this->response
+		);
 
-		$this->assertEquals(true, $service->valid);
+		$this->assertTrue($this->container->valid);
 	}
 
 	function testSingletons()
 	{
-		$service  = new TestContainer();
-		$request  = new Request();
-		$response = new Response();
+		$this->container->initialise(
+			$this->request,
+			$this->response
+		);
 
-		$service->initialise($request, $response);
+		$this->assertEquals(1, $this->container->static);
+		$this->assertEquals(1, $this->container->static);
 
-		$this->assertEquals(1, $service->static);
-		$this->assertEquals(1, $service->static);
+		$this->container->initialise(
+			$this->request,
+			$this->response
+		);
 
-		$service->initialise($request, $response);
-
-		$this->assertEquals(2, $service->static);
+		$this->assertEquals(2, $this->container->static);
 	}
 
 	/**
@@ -52,28 +78,10 @@ class ServicesTest extends \PHPUnit_Framework_TestCase
 	 */
 	function testThrowsException()
 	{
-		$service = new TestContainer();
-		$service->initialise(new Request(), new Response());
-		$service->nonExistant;
-	}
-}
-
-class TestContainer extends Services
-{
-	protected $i = 0;
-
-	protected function getService()
-	{
-		return new \stdClass();
-	}
-
-	protected function getValid()
-	{
-		return isset($this->request) && isset($this->response);
-	}
-
-	protected function getStatic()
-	{
-		return ++$this->i;
+		$this->container->initialise(
+			$this->request,
+			$this->response
+		);
+		$this->container->nonExistant;
 	}
 }
