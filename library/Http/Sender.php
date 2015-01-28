@@ -179,10 +179,12 @@ class Sender
      */
     protected function matchEntityTags()
     {
-        $requested = $this->request->getETags();
-        $responding = $this->response->getHeader("ETag");
+        if (($responding = $this->response->getHeader("ETag"))) {
+            $requested = $this->request->getETags();
+            return $requested && (in_array($responding, $requested) || in_array("*", $requested));
+        }
 
-        return $requested && (in_array($responding, $requested) || in_array("*", $requested));
+        return false;
     }
 
     /**
