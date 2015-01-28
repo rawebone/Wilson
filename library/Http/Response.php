@@ -85,7 +85,7 @@ class Response extends MessageAbstract
     protected $cacheControl;
 
     /**
-     * @var callable
+     * @var callable|null
      */
     protected $cacheMissedHandler;
 
@@ -105,7 +105,6 @@ class Response extends MessageAbstract
     public function __construct()
     {
         $this->cacheControl = new CacheControl($this);
-        $this->cacheMissedHandler = function () { };
     }
 
     /**
@@ -115,7 +114,9 @@ class Response extends MessageAbstract
      */
     public function cacheMissed()
     {
-        call_user_func($this->cacheMissedHandler);
+        if ($this->cacheMissedHandler) {
+            call_user_func($this->cacheMissedHandler);
+        }
     }
 
     /**
