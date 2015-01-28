@@ -412,7 +412,9 @@ class Request extends MessageAbstract
      */
     public function getETags()
     {
-        return preg_split("/\\s*,\\s*/", $this->getHeader("HTTP_IF_NONE_MATCH"), null, PREG_SPLIT_NO_EMPTY);
+        $tags = explode(",", $this->getHeader("HTTP_IF_NONE_MATCH", ""));
+        array_walk($tags, function (&$value) { $value = trim($value); });
+        return $tags;
     }
 
     /**
