@@ -96,9 +96,11 @@ class CacheControl
      */
     public function makeCacheHeaders()
     {
-        $this->setCacheControl();
-        $this->setExpires();
-        $this->setPragma();
+        if ($this->parts) {
+            $this->setCacheControl();
+            $this->setExpires();
+            $this->setPragma();
+        }
     }
 
     /**
@@ -157,10 +159,8 @@ class CacheControl
             $header .= (in_array($name, $haveValue) ? "$name=$value" : $name) . ", ";
         }
 
-        if ($header) {
-            $header = substr($header, 0, strlen($header) - 2);
-            $this->response->setHeader("Cache-Control", $header);
-        }
+        $header = substr($header, 0, strlen($header) - 2);
+        $this->response->setHeader("Cache-Control", $header);
     }
 
     /**
