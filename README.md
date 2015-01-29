@@ -12,8 +12,11 @@
 Wilson is a PHP micro framework designed for simplicity and performance. It main features are: 
 
 * Annotation based routing
+* Middleware
 * Service Location
-* Request/Response abstraction
+* HTTP Request/Response abstraction
+* HTTP Caching
+* Unit Testing
 
 
 ## Usage
