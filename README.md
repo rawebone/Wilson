@@ -18,6 +18,9 @@ Wilson is a PHP micro framework designed for simplicity and performance. It main
 * HTTP Caching
 * Unit Testing
 
+Its design is based around the Slim and Symfony frameworks, combining elements of both with the
+goal of creating system which is fast, correct, well documented, and simple.
+
 
 ## Usage
 
