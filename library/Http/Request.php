@@ -91,13 +91,6 @@ class Request extends MessageAbstract
      */
     protected $files = array();
 
-    /**
-     * $_COOKIES superglobal
-     *
-     * @var array
-     */
-    protected $cookies = array();
-
     public function mock($server = array(), $get = array(), $post = array(), $cookies = array(), $files = array(), $content = "")
     {
         $defaults = array(
@@ -128,10 +121,10 @@ class Request extends MessageAbstract
         array $files,
         $content = ""
     ) {
-        $this->cookies = $cookies;
         $this->content = $content;
         $this->files = $files;
 
+        $this->buildCookies($cookies);
         $this->buildServerInfo($server);
         $this->buildPaths($server);
         $this->setAllHeaders($server);
@@ -141,6 +134,16 @@ class Request extends MessageAbstract
         if (($original = $this->getHeader("HTTP_X_HTTP_METHOD_OVERRIDE"))) {
             $this->originalMethod = $this->method;
             $this->method = strtoupper($original);
+        }
+    }
+
+    /**
+     * @param array $cookies
+     */
+    protected function buildCookies(array $cookies)
+    {
+        foreach ($cookies as $name => $value) {
+            $this->addCookie(new Cookie($name, $value, null, null, null, null, null));
         }
     }
 
@@ -286,17 +289,6 @@ class Request extends MessageAbstract
     public function getFiles()
     {
         return $this->files;
-    }
-
-    /**
-     * Returns any cookies associated with the request. This is a copy of
-     * the $_COOKIES superglobal.
-     *
-     * @return array
-     */
-    public function getCookies()
-    {
-        return $this->cookies;
     }
 
     /**

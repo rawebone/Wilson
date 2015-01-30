@@ -11,6 +11,8 @@
 
 namespace Wilson\Tests\Http;
 
+use Wilson\Http\Cookie;
+use Wilson\Tests\Fixtures\Message;
 use Wilson\Http\MessageAbstract;
 
 class MessageAbstractTest extends \PHPUnit_Framework_TestCase
@@ -93,6 +95,13 @@ class MessageAbstractTest extends \PHPUnit_Framework_TestCase
             $msg->getHeader("Test")
         );
     }
-}
 
-class Message extends MessageAbstract { }
+    function testCookies()
+    {
+        $msg = new Message();
+        $msg->addCookie(new Cookie("name", "value"));
+
+        $this->assertInstanceOf("Wilson\\Http\\Cookie", $msg->getCookie("name"));
+        $this->assertCount(1, $msg->getCookies());
+    }
+}

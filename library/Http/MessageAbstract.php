@@ -60,6 +60,11 @@ abstract class MessageAbstract
     private $body = "";
 
     /**
+     * @var Cookie[]
+     */
+    private $cookies = array();
+
+    /**
      * @var array
      */
     private $headers = array();
@@ -70,6 +75,17 @@ abstract class MessageAbstract
     private $params = array();
 
     /**
+     * Adds a Cookie object to the message
+     *
+     * @param Cookie $cookie
+     * @return void
+     */
+    public function addCookie(Cookie $cookie)
+    {
+        $this->cookies[$cookie->name] = $cookie;
+    }
+
+    /**
      * Returns the body of the message.
      *
      * @return string|callable
@@ -77,6 +93,26 @@ abstract class MessageAbstract
     public function getBody()
     {
         return $this->body;
+    }
+
+    /**
+     * Returns a cookie associated with the message by name.
+     *
+     * @return Cookie|null
+     */
+    public function getCookie($name)
+    {
+        return isset($this->cookies[$name]) ? $this->cookies[$name] : null;
+    }
+
+    /**
+     * Returns any cookies associated with the message.
+     *
+     * @return Cookie[]
+     */
+    public function getCookies()
+    {
+        return $this->cookies;
     }
 
     /**

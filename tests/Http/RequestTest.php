@@ -81,14 +81,17 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($files, $req->getFiles());
     }
 
-    function testGetCookies()
+    function testCookiesBuilt()
     {
-        $cookies = array("A", "B", "C");
+        $cookies = array("my_cookie" => "my_value");
 
         $req = new Request();
         $req->mock(array(), array(), array(), $cookies);
 
-        $this->assertEquals($cookies, $req->getCookies());
+        $reqCookies = $req->getCookies();
+
+        $this->assertNotEmpty($reqCookies);
+        $this->assertInstanceOf("Wilson\\Http\\Cookie", current($reqCookies));
     }
 
     function testGetUrl()
