@@ -147,6 +147,10 @@ class Sender
             foreach ($this->response->getHeaders() as $name => $value) {
                 header("$name: $value", true);
             }
+
+            foreach ($this->response->getCookies() as $cookie) {
+                header("Set-Cookie: $cookie", false);
+            }
         }
     }
 

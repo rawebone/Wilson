@@ -12,10 +12,12 @@
 namespace Wilson\Tests\Http;
 
 use SebastianBergmann\Exporter\Exception;
+use Wilson\Http\Cookie;
 use Wilson\Http\HeaderStack;
 use Wilson\Http\Request;
 use Wilson\Http\Response;
 use Wilson\Http\Sender;
+use Wilson\Utils\Cache;
 
 class SenderTest extends \PHPUnit_Framework_TestCase
 {
@@ -270,5 +272,23 @@ class SenderTest extends \PHPUnit_Framework_TestCase
         $this->send();
 
         $this->assertEquals(304, $this->response->getStatus());
+    }
+
+    function testSendCookies()
+    {
+        $cookie = new Cookie("name", "value");
+        $this->response->addCookie($cookie);
+        $this->request->mock();
+
+        $this->send();
+
+        $expected = array(
+            "HTTP/1.1 200 OK",
+            "Date: " . $this->response->getHeader("Date"),
+            "Content-Length: 0",
+            "Set-Cookie: " . $cookie
+        );
+
+        $this->assertEquals($expected, HeaderStack::stack());
     }
 }
