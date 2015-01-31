@@ -88,20 +88,10 @@ class Cookie
             }
         }
 
-        if ($this->path) {
-            $str .= "; path=$this->path";
-        }
-
-        if ($this->domain) {
-            $str .= "; domain=$this->domain";
-        }
-
-        if ($this->secure) {
-            $str .= "; secure";
-        }
-
-        if ($this->httpOnly) {
-            $str .= "; httponly";
+        foreach (array("path", "domain", "secure", "httpOnly") as $field) {
+            if ($this->$field) {
+                $str .= "; " . strtolower($field) . (is_string($this->$field) ? "={$this->$field}" : "");
+            }
         }
 
         return $str;
