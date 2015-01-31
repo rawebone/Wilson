@@ -143,7 +143,7 @@ class Request extends MessageAbstract
     protected function buildCookies(array $cookies)
     {
         foreach ($cookies as $name => $value) {
-            $this->addCookie(new Cookie($name, $value, null, null, null, null, null));
+            $this->addCookie(new Cookie($name, $value, null, null, null, false, false));
         }
     }
 
