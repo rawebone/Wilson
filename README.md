@@ -8,7 +8,7 @@
 [![Coverage Status](https://img.shields.io/scrutinizer/coverage/g/rawebone/Wilson.svg?style=flat-square)](https://scrutinizer-ci.com/g/rawebone/Wilson/code-structure)
 [![Quality Score](https://img.shields.io/scrutinizer/g/rawebone/Wilson.svg?style=flat-square)](https://scrutinizer-ci.com/g/rawebone/Wilson)
 [![Total Downloads](https://img.shields.io/packagist/dt/rawebone/wilson.svg?style=flat-square)](https://packagist.org/packages/rawebone/wilson)
-[![SensioLabs Insight](https://img.shields.io/sensiolabs/i/3debe9ff-28bc-46b2-ae83-a7ddcf94c576.svg)](https://insight.sensiolabs.com/projects/3debe9ff-28bc-46b2-ae83-a7ddcf94c576)
+[![SensioLabs Insight](https://img.shields.io/sensiolabs/i/3debe9ff-28bc-46b2-ae83-a7ddcf94c576.svg?style=flat-square)](https://insight.sensiolabs.com/projects/3debe9ff-28bc-46b2-ae83-a7ddcf94c576)
 
 Wilson is a PHP micro framework designed for simplicity and performance. It main features are: 
 
