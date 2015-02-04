@@ -187,7 +187,7 @@ class Api
     {
         if (!$request) {
             $request = new Request();
-            $request->initialise($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES, @file_get_contents("php://input"));
+            $request->initialise($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES, file_get_contents("php://input"));
         }
 
         if (!$response) {
