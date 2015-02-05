@@ -86,7 +86,7 @@ Project | Licence | Maintainer(s)
 [Slim](http://www.slimframework.com) | [MIT](LICENSE.SLIM) | Josh Lockhart
 [Symfony](http://symfony.com) | [MIT](LICENSE.SYMFONY) | Fabien Potencier
 [phly/http](https://github.com/phly/http) | [BSD-2-Clause](LICENCE.PHLY) | Matthew Weier O'Phinney
-
+[enygma/shield](https://github.com/enygma/shieldframework) | MIT | Chris Cornutt
 
 ## Security
 
