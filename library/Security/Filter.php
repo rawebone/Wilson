@@ -64,7 +64,7 @@ class Filter
             }
         }
 
-        return $this->filterValidate($value, FILTER_VALIDATE_INT, compact("options"));
+        return $this->filter($value, FILTER_VALIDATE_INT, compact("options"));
     }
 
     /**
@@ -75,7 +75,7 @@ class Filter
      */
     public function float($value)
     {
-        return $this->filterValidate($value, FILTER_VALIDATE_FLOAT);
+        return $this->filter($value, FILTER_VALIDATE_FLOAT);
     }
 
     /**
@@ -86,7 +86,7 @@ class Filter
      */
     public function email($value)
     {
-        return $this->filterValidate($value, FILTER_VALIDATE_EMAIL);
+        return $this->filter($value, FILTER_VALIDATE_EMAIL);
     }
 
     /**
@@ -97,10 +97,18 @@ class Filter
      */
     public function url($value)
     {
-        return $this->filterValidate($value, FILTER_VALIDATE_URL);
+        return $this->filter($value, FILTER_VALIDATE_URL);
     }
 
-    protected function filterValidate($value, $type, $options = null)
+    /**
+     * Convenience mechanism to perform the validation.
+     *
+     * @param mixed $value
+     * @param int $type
+     * @param null|array $options
+     * @return mixed|null
+     */
+    protected function filter($value, $type, $options = null)
     {
         $filtered = filter_var($value, $type, $options);
 
