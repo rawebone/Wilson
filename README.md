@@ -18,6 +18,7 @@ Wilson is a PHP micro framework designed for simplicity and performance. It main
 * HTTP Request/Response abstraction
 * HTTP Caching
 * Unit Testing
+* Security
 
 Its design is based around the Slim and Symfony frameworks, combining elements of both with the
 goal of creating system which is fast, correct, well documented, and simple.
@@ -70,23 +71,25 @@ class ResourceA
 
 ```
 
-Look at the [wiki](https://github.com/rawebone/Wilson/wiki) for a proper guide through the functionality.
+Look at the [wiki](https://github.com/rawebone/Wilson/wiki) for a proper guide
+through the functionality.
 
 
-## Credits
+## License and Credits
 
-This framework is a patchwork consisting of the ideas and pieces of code from
-numerous other projects:
+The framework is [MIT licensed](LICENSE), go hog wild. No project is an island  
+and so credit is owed to the following projects whose code has been purloined
+or reshaped to make this one:
 
-* Josh Lockhart and other contributors to [Slim Framework](http://www.slimframework.com)
-* Fabien Potencier and other contributors to [Symfony](http://symfony.com)
-* Matthew Weier O'Phinney and other contributors to [phly/http](https://github.com/phly/http)
+Project | Licence | Maintainer(s)
+--------|---------|--------------
+[Slim](http://www.slimframework.com) | [MIT](LICENSE.SLIM) | Josh Lockhart
+[Symfony](http://symfony.com) | [MIT](LICENSE.SYMFONY) | Fabien Potencier
+[phly/http](https://github.com/phly/http) | [BSD-2-Clause](LICENCE.PHLY) | Matthew Weier O'Phinney
 
 
-## License
+## Security
 
-The code is under the [MIT license](LICENSE). Third party code licences:
+If you discover any security related issues, please email rawebone@gmail.com
+instead of using the issue tracker. 
 
-* [Symfony](LICENSE.SYMFONY) (MIT)
-* [Slim](LICENSE.SLIM) (MIT)
-* [phly/http](LICENCE.PHLY) (BSD-2-Clause)
