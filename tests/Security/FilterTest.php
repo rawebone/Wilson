@@ -63,6 +63,7 @@ class FilterTest extends \PHPUnit_Framework_TestCase
     function testString()
     {
         $this->assertEquals("blah", $this->filter->string("blah"));
-        $this->assertNull($this->filter->string(0.00));
+
+        // @todo expand use cases
     }
 }
