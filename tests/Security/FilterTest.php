@@ -66,4 +66,10 @@ class FilterTest extends \PHPUnit_Framework_TestCase
 
         // @todo expand use cases
     }
+
+    function testRegex()
+    {
+        $this->assertEquals("blah", $this->filter->regex("blah", "[a-z]+"));
+        $this->assertNull($this->filter->regex("blah", "[0-9]+"));
+    }
 }

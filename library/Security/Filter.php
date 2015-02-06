@@ -101,6 +101,18 @@ class Filter
     }
 
     /**
+     * Validates $value as matching the given expression fragment.
+     *
+     * @param mixed $value
+     * @param string $expr
+     * @return mixed|null
+     */
+    public function regex($value, $expr)
+    {
+        return preg_match("/^$expr$/", $value) ? $value : null;
+    }
+
+    /**
      * Convenience mechanism to perform the validation.
      *
      * @param mixed $value
