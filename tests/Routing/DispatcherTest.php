@@ -116,6 +116,7 @@ class DispatcherTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($this->response->hasHeader("X-Frame-Options"));
         $this->assertTrue($this->response->hasHeader("X-Content-Type-Options"));
+        $this->assertTrue($this->response->hasHeader("X-XSS-Protection"));
     }
 
     function testNotFoundDispatch()

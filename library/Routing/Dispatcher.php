@@ -92,12 +92,22 @@ class Dispatcher
      * Sets Headers on the response to help prevent XSS, Click-Jacking, etc.
      *
      * These can be overridden by the $api->prepare handler, if required.
+     *
+     * It is recommended that HSTS also be turned on, but that is potentially
+     * handled better by the Web Server than the Web Application.
+     *
+     * @link http://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security
+     * @link https://www.veracode.com/blog/2014/03/guidelines-for-setting-security-headers/
+     * @link https://www.owasp.org/index.php/HTML5_Security_Cheat_Sheet#HTTP_Headers_to_enhance_security
+     *
+     * @return void
      */
     protected function applyDefaultSecurity()
     {
         $this->response->setHeaders(array(
             "X-Content-Type-Options" => "no-sniff",
-            "X-Frame-Options" => "deny"
+            "X-Frame-Options" => "deny",
+            "X-XSS-Protection" => "1"
         ));
     }
 
