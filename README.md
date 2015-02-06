@@ -77,7 +77,7 @@ through the functionality.
 
 ## License and Credits
 
-The framework is [MIT licensed](LICENSE), go hog wild. No project is an island  
+The framework is [MIT licensed](LICENSE), go hog wild. No project is an island
 and so credit is owed to the following projects whose code has been purloined
 or reshaped to make this one:
 
@@ -87,6 +87,7 @@ Project | Licence | Maintainer(s)
 [Symfony](http://symfony.com) | [MIT](LICENSE.SYMFONY) | Fabien Potencier
 [phly/http](https://github.com/phly/http) | [BSD-2-Clause](LICENCE.PHLY) | Matthew Weier O'Phinney
 [enygma/shield](https://github.com/enygma/shieldframework) | MIT | Chris Cornutt
+
 
 ## Security
 
