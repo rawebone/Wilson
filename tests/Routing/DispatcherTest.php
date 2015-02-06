@@ -107,6 +107,17 @@ class DispatcherTest extends \PHPUnit_Framework_TestCase
         $this->assertEmpty(HeaderStack::stack());
     }
 
+    function testDispatchAppliesSecurity()
+    {
+        $this->api->testing = true;
+        $this->request->mock(array("REQUEST_URI" => "/route-1"));
+
+        $this->dispatch();
+
+        $this->assertTrue($this->response->hasHeader("X-Frame-Options"));
+        $this->assertTrue($this->response->hasHeader("X-Content-Type-Options"));
+    }
+
     function testNotFoundDispatch()
     {
         $this->api->notFound = function (Request $request) { $request->setParam("not_found", true); };

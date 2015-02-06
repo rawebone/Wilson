@@ -73,6 +73,9 @@ class Dispatcher
     public function dispatch()
     {
         try {
+            $this->applyDefaultSecurity();
+
+            // Call the User Prepare function
             $this->dispatchController($this->api->prepare);
             $this->routeRequest();
 
@@ -83,6 +86,19 @@ class Dispatcher
         if (!$this->api->testing) {
             $this->sender->send();
         }
+    }
+
+    /**
+     * Sets Headers on the response to help prevent XSS, Click-Jacking, etc.
+     *
+     * These can be overridden by the $api->prepare handler, if required.
+     */
+    protected function applyDefaultSecurity()
+    {
+        $this->response->setHeaders(array(
+            "X-Content-Type-Options" => "no-sniff",
+            "X-Frame-Options" => "deny"
+        ));
     }
 
     /**
