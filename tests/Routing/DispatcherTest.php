@@ -21,6 +21,8 @@ use Wilson\Http\Sender;
 use Wilson\Routing\Dispatcher;
 use Wilson\Routing\Router;
 use Wilson\Routing\UrlTools;
+use Wilson\Security\Filter;
+use Wilson\Security\RequestValidation;
 use Wilson\Services;
 use Wilson\Tests\Fixtures\DispatcherProxy;
 use Prophecy\PhpUnit\ProphecyTestCase;
@@ -59,7 +61,9 @@ class DispatcherTest extends \PHPUnit_Framework_TestCase
         $router = new Router(new Cache(""), new UrlTools());
         $sender = new Sender($req, $resp);
 
-        $this->dispatcher = new Dispatcher($api, $req, $resp, $router, $sender);
+        $validation = new RequestValidation(new Filter(), $req);
+
+        $this->dispatcher = new Dispatcher($api, $req, $resp, $router, $sender, $validation);
         $this->api->resources = array("Wilson\\Tests\\Fixtures\\ResourceFixture");
     }
 
@@ -130,5 +134,17 @@ class DispatcherTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEmpty($this->dispatch());
         $this->assertEquals(405, $this->response->getStatus());
+    }
+
+    function testRouteToHandlersFailsWhenValidationExceptionThrown()
+    {
+        $this->request->mock(array(
+            "REQUEST_URI" => "/route-5",
+        ), array(
+            "action" => "huohsou1.0an"
+        ));
+
+        $this->dispatch();
+        $this->assertEquals(500, $this->response->getStatus());
     }
 }

@@ -84,4 +84,9 @@ class ServicesTest extends \PHPUnit_Framework_TestCase
 		);
 		$this->container->nonExistant;
 	}
+
+	function testFilter()
+	{
+		$this->assertInstanceOf("Wilson\\Security\\Filter", $this->container->filter);
+	}
 }

@@ -16,6 +16,7 @@ use Wilson\Api;
 use Wilson\Http\Request;
 use Wilson\Http\Response;
 use Wilson\Http\Sender;
+use Wilson\Security\RequestValidation;
 
 /**
  * Dispatcher is responsible for routing requests and sending responses.
@@ -47,14 +48,20 @@ class Dispatcher
      */
     protected $sender;
 
+    /**
+     * @var RequestValidation
+     */
+    protected $validation;
+
     public function __construct(Api $api, Request $request, Response $response,
-        Router $router, Sender $sender)
+        Router $router, Sender $sender, RequestValidation $validation)
     {
         $this->api = $api;
         $this->request = $request;
         $this->response = $response;
         $this->router = $router;
         $this->sender = $sender;
+        $this->validation = $validation;
     }
 
     /**
@@ -116,6 +123,8 @@ class Dispatcher
     protected function routeToHandlers($match)
     {
         $this->request->setParams($match->params);
+
+        $this->validation->validate($match->handlers);
 
         // Dispatch all middleware, abort if they return boolean false
         foreach ($match->handlers as $handler) {

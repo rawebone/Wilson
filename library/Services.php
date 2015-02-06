@@ -13,6 +13,7 @@ namespace Wilson;
 
 use Wilson\Http\Request;
 use Wilson\Http\Response;
+use Wilson\Security\Filter;
 
 /**
  * This is a basic service container that allows for lazy loading of objects.
@@ -21,6 +22,10 @@ use Wilson\Http\Response;
  *
  * This object should be extended with getters in the form of getConnection,
  * and the service can be gotten by calling $service->connection.
+ *
+ * The following services are provided by default:
+ *
+ * @property Filter $filter
  */
 class Services
 {
@@ -79,5 +84,16 @@ class Services
         // Cache this to the Service object itself for a faster,
         // PHP engine based lookup
         return $this->$name = $this->$factory();
+    }
+
+    /**
+     * Returns a filter object. This can be overridden by the application
+     * if you want more specific filtration methods.
+     *
+     * @return Filter
+     */
+    protected function getFilter()
+    {
+        return new Filter();
     }
 }

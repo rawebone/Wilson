@@ -18,6 +18,8 @@ use Wilson\Http\Sender;
 use Wilson\Routing\Dispatcher;
 use Wilson\Routing\Router;
 use Wilson\Routing\UrlTools;
+use Wilson\Security\Filter;
+use Wilson\Security\RequestValidation;
 use Wilson\Utils\Cache;
 
 class Api
@@ -197,8 +199,10 @@ class Api
         $this->services->initialise($request, $response);
 
         $router = new Router(new Cache($this->cacheFile), new UrlTools());
+        $sender = new Sender($request, $response);
+        $validation = new RequestValidation($this->services->filter, $request);
 
-        $dispatcher = new Dispatcher($this, $request, $response, $router, new Sender($request, $response));
+        $dispatcher = new Dispatcher($this, $request, $response, $router, $sender, $validation);
         $dispatcher->dispatch();
     }
 }

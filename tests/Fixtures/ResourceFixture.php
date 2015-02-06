@@ -51,4 +51,13 @@ class ResourceFixture
         $response->setBody("failed");
         return false;
     }
+
+    /**
+     * @route GET /route-5
+     * @option action int
+     */
+    function option()
+    {
+
+    }
 }
