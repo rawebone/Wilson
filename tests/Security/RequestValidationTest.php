@@ -46,6 +46,35 @@ class RequestValidationTest extends \PHPUnit_Framework_TestCase
         $this->validation = new RequestValidation($this->filter, $this->request);
     }
 
+    function testParseOptionFilterNoArgs()
+    {
+        $result = $this->validation->parseOptionArgs("string");
+        $this->assertEquals(array("string"), $result);
+    }
+
+    function testParseOptionFilterWithSingleArg()
+    {
+        $result = $this->validation->parseOptionArgs("string(a=b)");
+        $expected = array(
+            "string",
+            "b",
+        );
+
+        $this->assertEquals($expected, $result);
+    }
+
+    function testParseOptionFilterWithArgs()
+    {
+        $result = $this->validation->parseOptionArgs("string(a=b, c=d)");
+        $expected = array(
+            "string",
+            "b",
+            "d"
+        );
+
+        $this->assertEquals($expected, $result);
+    }
+
     function testParseWithNoOptions()
     {
         $options = array();
@@ -56,7 +85,7 @@ class RequestValidationTest extends \PHPUnit_Framework_TestCase
     function testParseWithSingleOption()
     {
         $options = array();
-        $comment = "/**\r* @option param type arg1 arg2\r*/";
+        $comment = "/**\r* @option param type(a=arg1, b=arg2)\r*/";
 
         $this->validation->parseOptionFromComment($options, $comment);
         $this->assertCount(1, $options);
@@ -69,7 +98,7 @@ class RequestValidationTest extends \PHPUnit_Framework_TestCase
     function testParseWithMultipleOptions()
     {
         $options = array();
-        $comment = "/**\r* @option param type arg1 arg2\r*\r @option param2 type2 arg1 arg2\r*/";
+        $comment = "/**\r* @option param type(a=arg1, b=arg2)\r*\r @option param2 type2(a=arg1, b=arg2)\r*/";
 
         $this->validation->parseOptionFromComment($options, $comment);
         $this->assertCount(2, $options);

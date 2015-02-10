@@ -18,7 +18,7 @@ class OptionResourceFixture
     }
 
     /**
-     * @option action int 1 2
+     * @option action int(min=1, max=2)
      */
     function middlewareWithOption()
     {

@@ -69,7 +69,7 @@ class RequestValidation
             );
 
             if (!$validated) {
-                throw ValidationException::invalid($option->name, $option->filter);
+                throw ValidationException::invalid($option->name, $option->raw);
             }
 
             // Ensure that we use keep the validated parameter in the
@@ -113,8 +113,9 @@ class RequestValidation
     {
         if (preg_match_all(RequestValidation::OPTION_REGEX, $comment, $matches)) {
             for ($i = 0, $len = count($matches[1]); $i < $len; $i++) {
+                $raw  = $matches[2][$i];
                 $name = $matches[1][$i];
-                $args = explode(" ", $matches[2][$i]);
+                $args = $this->parseOptionArgs($raw);
 
                 // The name of the filter to be run
                 $filter = $args[0];
@@ -123,8 +124,31 @@ class RequestValidation
                 // for the parameter value to be filtered.
                 $args[0] = null;
 
-                $options[] = (object)compact("name", "filter", "args");
+                $options[] = (object)compact("name", "filter", "args", "raw");
             }
         }
+    }
+
+    /**
+     * Returns an array containing the name of the filter and the arguments for that
+     * filter.
+     *
+     * @param string $rawArguments
+     * @return array
+     */
+    public function parseOptionArgs($rawArguments)
+    {
+        if (($pos = strpos($rawArguments, "(")) === false) {
+            return array($rawArguments);
+        }
+
+        $arguments = array();
+        $arguments[] = substr($rawArguments, 0, $pos); // The filter name
+
+        foreach (explode(", ", substr($rawArguments, $pos, -1)) as $arg) {
+            $arguments[] = substr($arg, strpos($arg, "=") + 1);
+        }
+
+        return $arguments;
     }
 }
