@@ -59,7 +59,7 @@ class Filter
         );
 
         foreach ($options as $option => $val) {
-            if (!is_int($val)) {
+            if (is_null($val)) {
                 unset($options[$option]);
             }
         }
@@ -101,15 +101,28 @@ class Filter
     }
 
     /**
+     * Validates $value as being a Boolean. Returns boolean true or false
+     * if the value is sane, else null.
+     *
+     * @param $value
+     * @return mixed|null
+     */
+    public function boolean($value)
+    {
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    }
+
+    /**
      * Validates $value as matching the given expression fragment.
      *
      * @param mixed $value
      * @param string $expr
+     * @param string $flags
      * @return mixed|null
      */
-    public function regex($value, $expr)
+    public function regex($value, $expr, $flags = "")
     {
-        return preg_match("/^$expr$/", $value) ? $value : null;
+        return preg_match("/^$expr$/$flags", $value) ? $value : null;
     }
 
     /**

@@ -40,6 +40,11 @@ class FilterTest extends \PHPUnit_Framework_TestCase
         $this->assertNull($this->filter->int(123, 150));
         $this->assertNull($this->filter->int(123, 100, 115));
         $this->assertEquals(123, $this->filter->int(123, 100, 130));
+
+        // Min, max as strings ...
+        $this->assertNull($this->filter->int(123, "150"));
+        $this->assertNull($this->filter->int(123, "100", "115"));
+        $this->assertEquals(123, $this->filter->int(123, "100", "130"));
     }
 
     function testFloat()
@@ -71,5 +76,15 @@ class FilterTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertEquals("blah", $this->filter->regex("blah", "[a-z]+"));
         $this->assertNull($this->filter->regex("blah", "[0-9]+"));
+
+        $this->assertNull($this->filter->regex("blah", "BLAH"));
+        $this->assertEquals("blah", $this->filter->regex("blah", "BLAH", "i"));
+    }
+
+    function testBoolean()
+    {
+        $this->assertTrue($this->filter->boolean("true"));
+        $this->assertFalse($this->filter->boolean("0"));
+        $this->assertNull($this->filter->boolean("blah "));
     }
 }
