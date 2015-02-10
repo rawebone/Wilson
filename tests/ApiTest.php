@@ -41,7 +41,7 @@ class ApiTest extends ProphecyTestCase
 
         $this->assertEquals(500, $resp->getStatus());
         $this->assertEquals("text/html", $resp->getHeader("Content-Type"));
-        $this->assertEquals("<pre>$ex</pre>", $resp->getBody());
+        $this->assertEquals("", $resp->getBody());
     }
 
     function testDefaultNotFound()
@@ -55,7 +55,7 @@ class ApiTest extends ProphecyTestCase
 
         $this->assertEquals(404, $resp->getStatus());
         $this->assertEquals("text/html", $resp->getHeader("Content-Type"));
-        $this->assertEquals("<b>Not Found</b>", $resp->getBody());
+        $this->assertEquals("", $resp->getBody());
     }
 
     function testCreateCache()

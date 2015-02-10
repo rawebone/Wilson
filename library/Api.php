@@ -151,7 +151,7 @@ class Api
      */
     public function defaultError(Request $request, Response $response, Services $services, Exception $exception)
     {
-        $response->html("<pre>$exception</pre>", 500);
+        $response->html("", 500);
     }
 
     /**
@@ -164,7 +164,7 @@ class Api
      */
     public function defaultNotFound(Request $request, Response $response)
     {
-        $response->html("<b>Not Found</b>", 404);
+        $response->html("", 404);
     }
 
     /**
